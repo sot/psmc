@@ -1,40 +1,6 @@
-import ParseTable
 import numpy as np
-from glob import glob
 import twomass
 from twomass import DegCtoDegK as CtoK, DegKtoDegC as KtoC
-import smooth
-import math
-import Interpolate
-import sys
-
-if 'cmdstates' not in globals():
-    for cmdfile in glob('jan2108b/CL*.fits'):
-        print 'Reading', cmdfile
-        data = ParseTable.parse_fits_table(cmdfile)
-        try:
-            cmdstates = np.append(cmdstates, data)
-        except NameError:
-            cmdstates = data
-
-    time0 = cmdstates[0]['time']
-    cmdstates['time'] = (cmdstates['time'] - time0) / 1000.
-    ctime = cmdstates['time']
-
-if 'telem' not in globals():
-    telem = ParseTable.parse_ascii_table('jan2108b/telem.dat')
-    telem['date'] = (telem['date'] - time0) / 1000.
-    pwrdea = telem['1de28avo'] * telem['1deicacu']
-    pwrdpaa = telem['1dp28avo'] * telem['1dpicacu']
-    pwrdpab = telem['1dp28bvo'] * telem['1dpicbcu']
-    pwr = smooth.smooth(pwrdea + pwrdpaa + pwrdpab, window_len=33, window='flat')
-    ttime = telem['date']
-
-if 'cpwr' not in globals():
-    # Add pwr column to cmdstates.  There must be a better way...
-    cpwr = Interpolate.interp(pwr, ttime, ctime)
-    cmdstates_list = [cmdstate + (cpwr[i],) for i, cmdstate in enumerate(cmdstates.tolist())]
-    cmdstates = np.rec.array(cmdstates_list, dtype=np.dtype(cmdstates.dtype.descr + [('power', '>f8')]))
 
 def state_diff(c1, c2):
     if c2 is None:
@@ -57,81 +23,42 @@ def Pp(nccd):
     """
     return (128.1-56.9) * (nccd - 1) / (6-1) + 56.9
 
-cmdstate0 = None
-T = np.matrix([[],
-               []])
-nextT = None
-predstate = []
+def predict(states, pin0, dea0, dt=32.8):
+    """Predict the PSMC temperatures 1pdeaat and 1pin1at given the list of
+    configuration C{states} and initial temperatures C{dea_T0} and C{pin_T0}.
 
-print 'Start prediction ...'
-for cmdstate in cmdstates[0:-1:1]:
-    if state_diff(cmdstate, cmdstate0):
-        cmdstate0 = cmdstate
-        t0 = cmdstate0['time']
-        T0 = twomass.Ext_T0(cmdstate0['pitch'], cmdstate0['simpos'])
-        if nextT is None:
-            Ti = np.matrix([[telem[0]['1pin1at']],
-                            [telem[0]['1pdeaat']]]) + CtoK
+    The states recarray must include the following columns::
+      tstart  tstop  power  pitch  simpos
+
+    @param states: numpy recarray of states (must be contiguous)
+    @param pin0: initial value (degC) of 1pin1at at states[0]['tstart']
+    @param dea0: initial value (degC) of 1pdeaat at states[0]['tstart']
+    @param dt: approximate time spacing of output values (secs)
+
+    @return: recarray with cols time, 1pin1at, 1pdeaat, power, pitch, and simpos
+    """
+    
+    predT = None
+    predstates = []
+
+    for state in states:
+        t0 = state['tstart']
+        T0 = twomass.Ext_T0(state['pitch'], state['simpos'])
+        if predT is None:
+            Ti = np.matrix([[pin0],
+                            [dea0]]) + CtoK
         else:
-            Ti = nextT
-        Pp0 = cmdstate0['power']
-        Pp_from_nccd = Pp(cmdstate0['n_ccds_on'])
-        model = twomass.TwoMass(Pp0, T0, Ti)
+            Ti = predT
 
-    t = cmdstate['time']
-    nextT = model.calcT(t - t0)
-    predstate.append((t,
-                      Pp0, Pp_from_nccd,
-                      nextT[0,0].tolist(), nextT[1,0].tolist(),
-                      cmdstate0['pitch'], cmdstate0['simpos']))
-    T = np.append(T, nextT, 1)
+        model = twomass.TwoMass(state['power'], T0, Ti)
 
-print 'Finish'
+        n_ts = int((state['tstop'] - state['tstart']) / dt)
+        for t in np.linspace(state['tstart'], state['tstop'], n_ts):
+            predT = model.calcT(t - t0)
+            predstates.append((t, predT[0,0].tolist() + KtoC, predT[1,0].tolist() + KtoC,
+                              state['power'], state['pitch'], state['simpos']))
 
-sys.exit(0)
+    return np.rec.fromrecords(predstates,
+                              formats=['f8', 'f4', 'f4', 'f4', 'f4', 'f4'],
+                              names=['time', '1pin1at', '1pdeaat', 'power', 'pitch', 'simpos'])
 
-T = np.array(T)
-cpin = T[0,:].flatten() + KtoC
-cdea = T[1,:].flatten() + KtoC
-tpin = telem['1pin1at']
-tdea = telem['1pdeaat']
-predstate = np.rec.array(predstate, names=('time', 'power', 'power_from_nccd',
-                                              '1pin1at', '1pdeaat',
-                                              'pitch', 'tscpos'))
-if 1:
-    figure(1)
-    clf()
-    ctime = predstate['time']
-    subplot(2,1,1)
-    plot(ctime, cdea)
-    plot(ttime, tdea)
-    ylabel('degC')
-    title('1PDEAAT for JAN2108B')
-    subplot(2,1,2)
-    plot(ctime, cpin)
-    plot(ttime, tpin)
-    ylabel('degC')
-    xlabel('Time (ksec)')
-    title('1PIN1AT')
-    # savefig('./jan2108b/temps.png')
-
-    figure(2)
-    clf()
-    plot(ttime, pwr, 'g', label='Actual')
-    # plot(ctime, predstate['power'],'r', label='Model power')
-    plot(ctime, predstate['power_from_nccd'],'r', label='Power from N_CCD')
-    xlabel('Time (ksec)')
-    ylabel('Power (W)')
-    title('PSMC power for JAN2108B')
-    legend(loc=3)
-    savefig('./jan2108b/power.png')
-
-
-    figure(0)
-    clf()
-    tdea_ctime = Interpolate.interp(tdea, ttime, ctime)
-    hist(tdea_ctime - cdea, bins=30)
-    xlabel('Actual - predicted 1PDEAAT (degC)')
-    ylabel('Frequency')
-    title('Prediction model residuals for 1PDEAAT')
-    # savefig('./jan2108b/resid_hist.png')

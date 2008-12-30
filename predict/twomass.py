@@ -117,8 +117,9 @@ class TwoMass(object):
     def calcT(self, t):
         l1 = self.l1
         l2 = self.l2
-        exp_l1_t = math.exp(l1*t)
-        exp_l2_t = math.exp(l2*t)
+        t_ksec = t / 1000.
+        exp_l1_t = math.exp(l1*t_ksec)
+        exp_l2_t = math.exp(l2*t_ksec)
         T1 = np.matrix([[(exp_l1_t-1)/l1,  0             ],
                         [0,               (exp_l2_t-1)/l2]]) * self.eigvecinvs * self.heat
         T2 = np.matrix([[exp_l1_t, 0       ],
@@ -128,3 +129,4 @@ class TwoMass(object):
         # print 'T2 =', self.eigvecs * np.matrix([[exp_l1_t, 0],
         #                                        [0, exp_l2_t]]) * self.eigvecinvs
         return self.eigvecs * (T1 + T2)
+
