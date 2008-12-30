@@ -39,14 +39,63 @@ def predict(states, pin0, dea0, dt=32.8):
     """
     
     predT = None
+    predvals = []
+
+    for state in states:
+        t0 = state['tstart']
+        T0 = twomass.Ext_T0(state['pitch'], state['simpos'])
+        if predT is None:
+            Ti = np.array([[pin0],
+                           [dea0]]) + CtoK
+        else:
+            Ti = predT[:, -1].reshape(2,1)
+
+        model = twomass.TwoMass(state['power'], T0, Ti)
+
+        # Make array of times. 
+        n_t = int((state['tstop'] - state['tstart']) / dt)
+        t = np.linspace(state['tstart'], state['tstop'], n_t)
+
+        # Calculated predicted temperatures for this state
+        predT = model.calcT_vec(t - t0)
+        onest = np.ones_like(t)
+        predvals.append(np.array([t,
+                                  predT[0,:] + KtoC,
+                                  predT[1,:] + KtoC,
+                                  state['power'] * onest,
+                                  state['pitch'] * onest,
+                                  state['simpos'] * onest]))
+
+    predvals = np.hstack(predvals)
+    return np.rec.fromarrays(predvals,
+                             formats=['f8', 'f4', 'f4', 'f4', 'f4', 'f4'],
+                             names=['time', '1pin1at', '1pdeaat', 'power', 'pitch', 'simpos'])
+
+def predict_nonvec(states, pin0, dea0, dt=32.8):
+    """Predict the PSMC temperatures 1pdeaat and 1pin1at given the list of
+    configuration C{states} and initial temperatures C{dea_T0} and C{pin_T0}.
+    Use the non-vectorized twomass.calcT() routine to do the calculation.
+
+    The states recarray must include the following columns::
+      tstart  tstop  power  pitch  simpos
+
+    @param states: numpy recarray of states (must be contiguous)
+    @param pin0: initial value (degC) of 1pin1at at states[0]['tstart']
+    @param dea0: initial value (degC) of 1pdeaat at states[0]['tstart']
+    @param dt: approximate time spacing of output values (secs)
+
+    @return: recarray with cols time, 1pin1at, 1pdeaat, power, pitch, and simpos
+    """
+    
+    predT = None
     predstates = []
 
     for state in states:
         t0 = state['tstart']
         T0 = twomass.Ext_T0(state['pitch'], state['simpos'])
         if predT is None:
-            Ti = np.matrix([[pin0],
-                            [dea0]]) + CtoK
+            Ti = np.array([[pin0],
+                           [dea0]]) + CtoK
         else:
             Ti = predT
 

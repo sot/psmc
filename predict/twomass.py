@@ -32,11 +32,10 @@ C1 = U01 * 20. / 2 * 1.5
 # change when PSMC power changes due to N_CCD changing.
 C2 = C1 / 10. * 1
 
-M = np.matrix([[-(U01 + U12) / C1 ,  U12 / C1],
-               [U12 / C2          , -U12 / C2]])
+M = np.array([[-(U01 + U12) / C1 ,  U12 / C1],
+              [U12 / C2          , -U12 / C2]])
 eigvals, eigvecs = np.linalg.eig(M)
-M_eigvecs = np.matrix(eigvecs)
-M_eigvecinvs = np.linalg.inv(eigvecs)
+eigvecinvs = np.linalg.inv(eigvecs)
 
 class Ext_T0(object):
     """External (SIM) temperature, depending on SIM-Z and pitch (and optionally
@@ -106,27 +105,76 @@ class Ext_T0(object):
         
 class TwoMass(object):
     def __init__(self, Pp, T0, Ti):
-        self.heat = np.matrix([[U01 * T0.degK / C1],
+        self.heat = np.array([[U01 * T0.degK / C1],
                                [Pp / C2]])
-        self.eigvecs = M_eigvecs
-        self.eigvecinvs = M_eigvecinvs
+        self.eigvecs = eigvecs
+        self.eigvecinvs = eigvecinvs
         self.l1 = eigvals[0]
         self.l2 = eigvals[1]
         self.Ti = Ti
 
     def calcT(self, t):
+        """Calculate predicted temperatures at a single input time using the
+        two-mass model.  This is much slower than calcT_vec in most cases.
+
+        @param t: input time (sec)
+
+        @return: numpy array out[2].  out[0] is 1pin1at and out[1] is 1pdeaat
+        """
         l1 = self.l1
         l2 = self.l2
         t_ksec = t / 1000.
         exp_l1_t = math.exp(l1*t_ksec)
         exp_l2_t = math.exp(l2*t_ksec)
-        T1 = np.matrix([[(exp_l1_t-1)/l1,  0             ],
-                        [0,               (exp_l2_t-1)/l2]]) * self.eigvecinvs * self.heat
-        T2 = np.matrix([[exp_l1_t, 0       ],
-                        [0,        exp_l2_t]]) * self.eigvecinvs * self.Ti
-        # print 'twomass t=',t
-        # print 'T1 =', self.eigvecs * T1
-        # print 'T2 =', self.eigvecs * np.matrix([[exp_l1_t, 0],
-        #                                        [0, exp_l2_t]]) * self.eigvecinvs
-        return self.eigvecs * (T1 + T2)
+        T1 = np.dot(np.dot(np.array([[(exp_l1_t-1)/l1,  0             ],
+                                     [0,               (exp_l2_t-1)/l2]]),
+                           self.eigvecinvs),
+                    self.heat)
+        T2 = np.dot(np.dot(np.array([[exp_l1_t, 0       ],
+                                     [0,        exp_l2_t]]),
+                           self.eigvecinvs),
+                    self.Ti)
+
+        return np.dot(self.eigvecs, (T1 + T2)).reshape(-1)
+
+    def calcT_vec(self, t):
+        """Calculate predicted temperatures at the input times using the
+        two-mass model.
+
+        @param t: numpy array of input times (sec)
+
+        @return: numpy array out[2, len(t)].  out[0,:] is 1pin1at and
+           out[1, :] is 1pdeaat
+        """
+
+        # Calculate as for the following, but in a vectorized form:
+##       exp_l1_t = math.exp(l1*t)
+##       exp_l2_t = math.exp(l2*t)
+##       T1 = np.matrix([[(exp_l1_t-1)/l1, 0 ],
+##                       [0, (exp_l2_t-1)/l2]]) * self.eigvecinvs * self.heat
+##       T2 = np.matrix([[exp_l1_t, 0  ],
+##                       [0,  exp_l2_t]]) * self.eigvecinvs * self.Ti
+##       return self.eigvecs * (T1 + T2)
+
+        l1 = self.l1
+        l2 = self.l2
+
+        t_ksec = t / 1000.
+        exp_l1_t = np.exp(l1*t_ksec)
+        exp_l2_t = np.exp(l2*t_ksec)
+
+        lenM = len(t) * 2 * 2
+        M1 = np.zeros(lenM)
+        M1[0:lenM:4] = (exp_l1_t-1)/l1
+        M1[3:lenM:4] = (exp_l2_t-1)/l2
+        M1 = M1.reshape(len(t), 2, 2)
+        T1 = np.dot(np.dot(M1, self.eigvecinvs), self.heat)
+
+        M2 = np.zeros(lenM)
+        M2[0:lenM:4] = exp_l1_t
+        M2[3:lenM:4] = exp_l2_t
+        M2 = M2.reshape(len(t), 2, 2)
+        T2 = np.dot(np.dot(M2, self.eigvecinvs), self.Ti)
+
+        return np.dot(self.eigvecs, (T1 + T2)).reshape(2, -1)
 
