@@ -1,0 +1,11 @@
+Get thermal and power telemetry
+
+/proj/sot/ska/bin/fetch --start 317252824.18 --stop 317793302.58 \
+  --time-format secs \
+   tscpos \
+   point_suncentang \
+   1pdeaat 1pin1at \
+   1de28avo 1deicacu \
+   1dp28avo 1dpicacu \
+   1dp28bvo 1dpicbcu \
+   >! jan2108b/telem.dat
