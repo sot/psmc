@@ -10,9 +10,39 @@ Get thermal and power telemetry
    1dp28bvo 1dpicbcu \
    >! jan2108b/telem.dat
 
-b = array([[[ 1.,  2.],
-        [ 3.,  4.]],
-       [[ 5.,  6.],
-        [ 7.,  8.]],
-       [[ 9.,  10.],
-        [ 11.,  12.]]])
+/proj/sot/ska/bin/fetch \
+  --start 2008-11-01T00:00:00 \
+  --stop 2008-12-01T00:00:00 \
+  --dt 32.8 --time-format secs \
+   tscpos \
+   point_suncentang \
+   1pdeaat 1pin1at \
+   1de28avo 1deicacu \
+   1dp28avo 1dpicacu \
+   1dp28bvo 1dpicbcu \
+   >! telem_nov08.dat
+
+/proj/sot/ska/bin/fetch \
+  --start 2008-01-01T00:00:00 \
+  --stop 2008-12-25T00:00:00 \
+  --dt 32.8 --time-format secs \
+   tscpos \
+   point_suncentang \
+   1pdeaat 1pin1at \
+   1de28avo 1deicacu \
+   1dp28avo 1dpicacu \
+   1dp28bvo 1dpicbcu \
+   >! telem_08.dat
+
+/proj/sot/ska/bin/fetch \
+  --start 2008-01-01T00:00:00 \
+  --stop 2008-02-01T00:00:00 \
+  --dt 32.8 --time-format secs \
+   tscpos \
+   point_suncentang \
+   1pdeaat 1pin1at \
+   1de28avo 1deicacu \
+   1dp28avo 1dpicacu \
+   1dp28bvo 1dpicbcu \
+   >! telem_01.dat
+

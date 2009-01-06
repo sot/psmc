@@ -23,7 +23,7 @@ def Pp(nccd):
     """
     return (128.1-56.9) * (nccd - 1) / (6-1) + 56.9
 
-def predict(states, pin0, dea0, dt=32.8):
+def predict(states, pin0, dea0, dt=32.8, tstartcol='time_start', tstopcol='time_stop'):
     """Predict the PSMC temperatures 1pdeaat and 1pin1at given the list of
     configuration C{states} and initial temperatures C{dea_T0} and C{pin_T0}.
 
@@ -42,7 +42,7 @@ def predict(states, pin0, dea0, dt=32.8):
     predvals = []
 
     for state in states:
-        t0 = state['tstart']
+        t0 = state[tstartcol]
         T0 = twomass.Ext_T0(state['pitch'], state['simpos'])
         if predT is None:
             Ti = np.array([[pin0],
@@ -53,8 +53,8 @@ def predict(states, pin0, dea0, dt=32.8):
         model = twomass.TwoMass(state['power'], T0, Ti)
 
         # Make array of times. 
-        n_t = int((state['tstop'] - state['tstart']) / dt)
-        t = np.linspace(state['tstart'], state['tstop'], n_t)
+        n_t = int((state[tstopcol] - state[tstartcol]) / dt)
+        t = np.linspace(state[tstartcol], state[tstopcol], n_t+2)
 
         # Calculated predicted temperatures for this state
         predT = model.calcT_vec(t - t0)
@@ -80,8 +80,8 @@ def predict_nonvec(states, pin0, dea0, dt=32.8):
       tstart  tstop  power  pitch  simpos
 
     @param states: numpy recarray of states (must be contiguous)
-    @param pin0: initial value (degC) of 1pin1at at states[0]['tstart']
-    @param dea0: initial value (degC) of 1pdeaat at states[0]['tstart']
+    @param pin0: initial value (degC) of 1pin1at at states[0][tstartcol]
+    @param dea0: initial value (degC) of 1pdeaat at states[0][tstartcol]
     @param dt: approximate time spacing of output values (secs)
 
     @return: recarray with cols time, 1pin1at, 1pdeaat, power, pitch, and simpos
@@ -91,7 +91,7 @@ def predict_nonvec(states, pin0, dea0, dt=32.8):
     predstates = []
 
     for state in states:
-        t0 = state['tstart']
+        t0 = state[tstartcol]
         T0 = twomass.Ext_T0(state['pitch'], state['simpos'])
         if predT is None:
             Ti = np.array([[pin0],
@@ -101,8 +101,8 @@ def predict_nonvec(states, pin0, dea0, dt=32.8):
 
         model = twomass.TwoMass(state['power'], T0, Ti)
 
-        n_ts = int((state['tstop'] - state['tstart']) / dt)
-        for t in np.linspace(state['tstart'], state['tstop'], n_ts):
+        n_ts = int((state[tstopcol] - state[tstartcol]) / dt)
+        for t in np.linspace(state[tstartcol], state[tstopcol], n_ts):
             predT = model.calcT(t - t0)
             predstates.append((t, predT[0,0].tolist() + KtoC, predT[1,0].tolist() + KtoC,
                               state['power'], state['pitch'], state['simpos']))
