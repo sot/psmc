@@ -17,33 +17,22 @@ import Ska.Numpy
 CtoK = 273.15
 KtoC = -CtoK
 
-# See twomass.py for explanation
-U01 = (128.1 - 56.9) / 5.3 / 2.5
-U12 = U01 / 0.65
-C1 = U01 * 20. / 2 * 1.5
-C2 = C1 / 10.
-
-# by-eye
-pardefault = dict(acis50=54, acis90=27, acis150=30,
-                  hrci50=45, hrci90=25, hrci150=36,
-                  hrcs50=33, hrcs90=35, hrcs150=38,
-                  u01=U01, u12=U12, c1=C1, c2=C2)
-
-# first attempt at fitting
-pardefault = dict(acis150 =   28.5721,
-                  acis50  =   54.9299,
-                  acis90  =   29.1487,
-                  c1      =    113.37,
-                  c2      =   12.0193,
-                  hrci150 =   29.9638,
-                  hrci50  =   42.6373,
-                  hrci90  =   32.2168,
-                  hrcs150 =   39.3487,
-                  hrcs50  =   35.2295,
-                  hrcs90  =   32.4806,
-                  u01     =   5.66858,
-                  u01quad =  -0.776116,
-                  u12     =   8.53625)
+# Based on chi2gehrels fit of both 1pdeaat and 1pin1at
+# over the range 2008-04-09 - 2008-12-28
+pardefault = dict(acis150 =    27.1999,
+                  acis50  =    55.4133,
+                  acis90  =    31.2034,
+                  c1      =    122.204,
+                  c2      =    16.5221,
+                  hrci150 =    33.2693,
+                  hrci50  =    43.8671,
+                  hrci90  =    29.8505,
+                  hrcs150 =     38.385,
+                  hrcs50  =    33.1306,
+                  hrcs90  =    32.2106,
+                  u01     =    6.23487,
+                  u01quad =  -0.524545,
+                  u12     =    7.76193)
 
 def Tf_zero_power(par, pitch, simz):
     """Settling temperature (Tf) at zero PSMC power.
@@ -123,6 +112,20 @@ def calc_state_temps(state, par, t, Ti, eigvals, eigvecs, eigvecinvs, U01, C1, C
 
 class TwoDOF(object):
     def __init__(self, states, T_pin0, T_dea0, dt=32.8):
+        """Initialize model object to predict the PSMC temperatures 1PDEAAT and
+        1PIN1AT given the list of configuration C{states} and initial
+        temperatures C{dea_T0} and C{pin_T0}.
+
+        The states recarray must include the following columns::
+          tstart  tstop  power  pitch  simpos
+
+        @param states: numpy recarray of states (must be contiguous)
+        @param pin0: initial value (degC) of 1pin1at at states[0]['tstart']
+        @param dea0: initial value (degC) of 1pdeaat at states[0]['tstart']
+        @param dt: approximate time spacing for calculating model values (secs)
+
+        @return: TwoDOF object
+        """
         self.states = states
         self.T_pin0 = T_pin0
         self.T_dea0 = T_dea0
@@ -133,19 +136,13 @@ class TwoDOF(object):
         out = self.predT[0,:] if msid == '1pin1at' else self.predT[1,:]
         return Ska.Numpy.interpolate(out + KtoC, self.tval, t)
 
-    def calc_temp(self, t, par=pardefault, msid='1pdeaat'):
-        """Predict the PSMC temperatures 1pdeaat and 1pin1at given the list of
-        configuration C{states} and initial temperatures C{dea_T0} and C{pin_T0}.
+    def calc_model(self, t, par=pardefault, msid='1pdeaat'):
+        """
+        @param t: array of times at which to return the model temperatures
+        @param par: model parameters
+        @param msid: desired MSID ('1pin1at' or '1pdeaat')
 
-        The states recarray must include the following columns::
-          tstart  tstop  power  pitch  simpos
-
-        @param states: numpy recarray of states (must be contiguous)
-        @param pin0: initial value (degC) of 1pin1at at states[0]['tstart']
-        @param dea0: initial value (degC) of 1pdeaat at states[0]['tstart']
-        @param dt: approximate time spacing of output values (secs)
-
-        @return: recarray with cols time, 1pin1at, 1pdeaat, power, pitch, and simpos
+        @return: array of temperatures for C{msid}
         """
         # If params are unchanged then use existing values
         if par == self.par:
