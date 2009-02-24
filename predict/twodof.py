@@ -63,23 +63,23 @@ def calc_state_temps(state, par, t, Ti, eigvals, eigvecs, eigvecinvs, U01, C1, C
     """Calculate predicted temperatures at the input times for a given state
     using the two-mass model.
 
-    @param state: state vector (with power, pitch, simpos)
-    @param par: model parameter values
-    @param t: numpy array of input times (sec)
-    @param Ti: Vector of initial temperatures (1pin1at and 1pdeaat)
+    Evaluate the following but do so in a vectorized form::
 
-    @return: numpy array of temperatures at times C{t}
+      exp_l1_t = math.exp(l1*t)
+      exp_l2_t = math.exp(l2*t)
+      T1 = np.matrix([[(exp_l1_t-1)/l1, 0 ],
+                      [0, (exp_l2_t-1)/l2]]) * self.eigvecinvs * self.heat
+      T2 = np.matrix([[exp_l1_t, 0  ],
+                      [0,  exp_l2_t]]) * self.eigvecinvs * self.Ti
+      return self.eigvecs * (T1 + T2)
+
+    :param state: state vector (with power, pitch, simpos)
+    :param par: model parameter values
+    :param t: numpy array of input times (sec)
+    :param Ti: Vector of initial temperatures (1pin1at and 1pdeaat)
+
+    :rtype: numpy array of temperatures at times C{t}
     """
-
-    # Calculate as for the following, but in a vectorized form:
-##       exp_l1_t = math.exp(l1*t)
-##       exp_l2_t = math.exp(l2*t)
-##       T1 = np.matrix([[(exp_l1_t-1)/l1, 0 ],
-##                       [0, (exp_l2_t-1)/l2]]) * self.eigvecinvs * self.heat
-##       T2 = np.matrix([[exp_l1_t, 0  ],
-##                       [0,  exp_l2_t]]) * self.eigvecinvs * self.Ti
-##       return self.eigvecs * (T1 + T2)
-
     # Model settling temperature at zero power for given pitch and sim-z
     Tf_zp = Tf_zero_power(par, state['pitch'], state['simpos'])
     
@@ -119,12 +119,12 @@ class TwoDOF(object):
         The states recarray must include the following columns::
           tstart  tstop  power  pitch  simpos
 
-        @param states: numpy recarray of states (must be contiguous)
-        @param pin0: initial value (degC) of 1pin1at at states[0]['tstart']
-        @param dea0: initial value (degC) of 1pdeaat at states[0]['tstart']
-        @param dt: approximate time spacing for calculating model values (secs)
+        :param states: numpy recarray of states (must be contiguous)
+        :param pin0: initial value (degC) of 1pin1at at states[0]['tstart']
+        :param dea0: initial value (degC) of 1pdeaat at states[0]['tstart']
+        :param dt: approximate time spacing for calculating model values (secs)
 
-        @return: TwoDOF object
+        :rtype: TwoDOF object
         """
         self.states = states
         self.T_pin0 = T_pin0
@@ -133,16 +133,17 @@ class TwoDOF(object):
         self.par = None
 
     def interpolate_msid_temp(self, msid, t):
+        """Return predicted temperatures in degC for ``msid`` at times ``t``."""
         out = self.predT[0,:] if msid == '1pin1at' else self.predT[1,:]
         return Ska.Numpy.interpolate(out + KtoC, self.tval, t)
 
     def calc_model(self, t, par=pardefault, msid='1pdeaat'):
         """
-        @param t: array of times at which to return the model temperatures
-        @param par: model parameters
-        @param msid: desired MSID ('1pin1at' or '1pdeaat')
+        :param t: array of times at which to return the model temperatures
+        :param par: model parameters
+        :param msid: desired MSID ('1pin1at' or '1pdeaat')
 
-        @return: array of temperatures for C{msid}
+        :rtype: array of temperatures for C{msid}
         """
         # If params are unchanged then use existing values
         if par == self.par:
@@ -185,3 +186,60 @@ class TwoDOF(object):
         self.par = par
         
         return self.interpolate_msid_temp(msid, t)
+
+def calc_twodof_model(states, T_pin0, T_dea0, times, dt=32.8):
+    """Calculate the PSMC temperatures 1PDEAAT and 1PIN1AT given the list of
+    configuration ``states`` and initial temperatures ``dea_T0`` and ``pin_T0``.
+
+    The ``states`` input must be an iterable list with the following keys::
+      tstart  tstop  power  pitch  simpos
+
+    :param states: iterable list of states (must be contiguous)
+    :param pin0: initial value (degC) of 1pin1at at states[0]['tstart']
+    :param dea0: initial value (degC) of 1pdeaat at states[0]['tstart']
+    :param times: array of times at which to return the model temperatures
+    :param dt: approximate time spacing for calculating model values (secs)
+
+    :rtype: predicted temperature arrays (T_pin, T_dea)
+    """
+    modelpar = pardefault               # Model parameters from "characteristics"
+
+    predTs = []
+    tvals = []
+    Ti = np.array([[T_pin0],
+                   [T_dea0]]) + CtoK
+
+    for state in states:
+        U01 = modelpar['u01'] + modelpar['u01quad'] * ((state['pitch']-110)/60)**2
+        U12 = modelpar['u12']
+        C1 = modelpar['c1']
+        C2 = modelpar['c2']
+
+        M = np.array([[-(U01 + U12) / C1 ,  U12 / C1],
+                      [U12 / C2          , -U12 / C2]])
+        eigvals, eigvecs = np.linalg.eig(M)
+        eigvecinvs = np.linalg.inv(eigvecs)
+
+        t0 = state['tstart']
+
+        # Make array of times. 
+        n_t = int((state['tstop'] - state['tstart']) / dt)
+        tval = np.linspace(state['tstart'], state['tstop'], n_t+2)
+
+        # Calculated predicted temperatures for this state
+        predT = calc_state_temps(state, modelpar, tval - t0, Ti,
+                                 eigvals, eigvecs, eigvecinvs,
+                                 U01, C1, C2)
+        tvals.append(tval)
+        predTs.append(predT)
+
+        Ti = predT[:, -1].reshape(2,1)
+
+    tval = np.hstack(tvals)
+    predT = np.hstack(predTs)
+
+    # Interpolate predicted temperatures in degC at desired output times
+    T_pin = Ska.Numpy.interpolate(predT[0,:] + KtoC, tval, times)
+    T_dea = Ska.Numpy.interpolate(predT[1,:] + KtoC, tval, times)
+
+    return T_pin, T_dea

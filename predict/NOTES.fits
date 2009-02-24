@@ -1,0 +1,99 @@
+date0 = Chandra.Time.DateTime('2008-09-01T00:00:00')
+date1 = Chandra.Time.DateTime('2008-12-01T00:00:00')
+with DeadChi and neldermead:
+
+methodname = neldermead
+statname   = deadchi
+statval    = 381918.08805
+istatval   = 383577.46682
+dstatval   = 1659.37877054
+numpoints  = 238778
+dof        = 238773
+
+   dea.acis150  frozen      28.2163 -3.40282e+38  3.40282e+38           
+   dea.acis50   frozen      55.1475 -3.40282e+38  3.40282e+38           
+   dea.acis90   frozen      29.8466 -3.40282e+38  3.40282e+38           
+   dea.c1       frozen      156.275 -3.40282e+38  3.40282e+38           
+   dea.c2       frozen      26.6175 -3.40282e+38  3.40282e+38           
+   dea.hrci150  frozen       33.725 -3.40282e+38  3.40282e+38           
+   dea.hrci50   frozen      41.4714 -3.40282e+38  3.40282e+38           
+   dea.hrci90   frozen      30.1715 -3.40282e+38  3.40282e+38           
+   dea.hrcs150  frozen      38.7759 -3.40282e+38  3.40282e+38           
+   dea.hrcs50   frozen      33.3697 -3.40282e+38  3.40282e+38           
+   dea.hrcs90   frozen      37.1241 -3.40282e+38  3.40282e+38           
+   dea.u01      frozen      9.14157 -3.40282e+38  3.40282e+38           
+   dea.u01quad  frozen     0.481851 -3.40282e+38  3.40282e+38           
+   dea.u12      frozen      5.51036 -3.40282e+38  3.40282e+38           
+
+
+#####################################################################
+date0 = Chandra.Time.DateTime('2008-04-09T00:00:00')
+date1 = Chandra.Time.DateTime('2008-12-28T00:00:00')
+#####################################################################
+methodname = levmar
+statname   = deadchi
+succeeded  = True
+statval    = 3195634.92609
+istatval   = 3213004.63402
+dstatval   = 17369.7079333
+numpoints  = 682487
+dof        = 682482
+Done at Wed Jan  7 12:30:26 2009
+usermodel.dea
+   Param        Type          Value          Min          Max      Units
+   -----        ----          -----          ---          ---      -----
+   dea.acis150  frozen      26.9874 -3.40282e+38  3.40282e+38           
+   dea.acis50   frozen      54.8613 -3.40282e+38  3.40282e+38           
+   dea.acis90   frozen      31.5244 -3.40282e+38  3.40282e+38           
+   dea.c1       frozen      192.592 -3.40282e+38  3.40282e+38           
+   dea.c2       frozen      22.2887 -3.40282e+38  3.40282e+38           
+   dea.hrci150  frozen      32.8612 -3.40282e+38  3.40282e+38           
+   dea.hrci50   frozen       43.201 -3.40282e+38  3.40282e+38           
+   dea.hrci90   frozen      30.3822 -3.40282e+38  3.40282e+38           
+   dea.hrcs150  frozen      37.7485 -3.40282e+38  3.40282e+38           
+   dea.hrcs50   frozen       31.966 -3.40282e+38  3.40282e+38           
+   dea.hrcs90   frozen      32.8888 -3.40282e+38  3.40282e+38           
+   dea.u01      frozen      10.2238 -3.40282e+38  3.40282e+38           
+   dea.u01quad  frozen    -0.347589 -3.40282e+38  3.40282e+38           
+   dea.u12      frozen      5.54804 -3.40282e+38  3.40282e+38           
+
+#####################################################################
+** Fitting both 1pdeaat and 1pin1at **
+date0 = Chandra.Time.DateTime('2008-04-09T00:00:00')
+date1 = Chandra.Time.DateTime('2008-12-28T00:00:00')
+#####################################################################
+Fitting time const params at Wed Jan  7 13:37:18 2009
+Datasets              = 1, 2
+Method                = levmar
+Statistic             = chi2gehrels
+Initial fit statistic = 4.90791e+06
+Final fit statistic   = 4.81962e+06 at function evaluation 31
+Data points           = 1.37238e+06
+Degrees of freedom    = 1.37237e+06
+Probability [Q-value] = 0
+Reduced statistic     = 3.51189
+Change in statistic   = 88291.6
+   dea.c1         122.204     
+   dea.c2         16.5221     
+   dea.u01        6.23487     
+   dea.u01quad    -0.524545   
+   dea.u12        7.76193     
+Done at Wed Jan  7 13:39:47 2009
+usermodel.dea
+   Param        Type          Value          Min          Max      Units
+   -----        ----          -----          ---          ---      -----
+   dea.acis150  frozen      27.1999 -3.40282e+38  3.40282e+38           
+   dea.acis50   frozen      55.4133 -3.40282e+38  3.40282e+38           
+   dea.acis90   frozen      31.2034 -3.40282e+38  3.40282e+38           
+   dea.c1       frozen      122.204 -3.40282e+38  3.40282e+38           
+   dea.c2       frozen      16.5221 -3.40282e+38  3.40282e+38           
+   dea.hrci150  frozen      33.2693 -3.40282e+38  3.40282e+38           
+   dea.hrci50   frozen      43.8671 -3.40282e+38  3.40282e+38           
+   dea.hrci90   frozen      29.8505 -3.40282e+38  3.40282e+38           
+   dea.hrcs150  frozen       38.385 -3.40282e+38  3.40282e+38           
+   dea.hrcs50   frozen      33.1306 -3.40282e+38  3.40282e+38           
+   dea.hrcs90   frozen      32.2106 -3.40282e+38  3.40282e+38           
+   dea.u01      frozen      6.23487 -3.40282e+38  3.40282e+38           
+   dea.u01quad  frozen    -0.524545 -3.40282e+38  3.40282e+38           
+   dea.u12      frozen      7.76193 -3.40282e+38  3.40282e+38           
+
