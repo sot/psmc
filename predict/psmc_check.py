@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 ========================
 psmc_check
@@ -61,14 +63,11 @@ import time
 import shutil
 
 import numpy as np
-import Ska.ParseCM
 import Ska.DBI
 import Ska.Table
-import Ska.Shell
 import Ska.Numpy
 import Ska.TelemArchive.fetch
 from Chandra.Time import DateTime
-from Quaternion import Quat
 
 import Chandra.cmd_states as cmd_states
 import characteristics
@@ -84,14 +83,6 @@ if __name__ == '__main__':
     matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import Ska.Matplotlib
-
-# Django setup (used for template rendering)
-import django.template
-import django.conf
-try:
-    django.conf.settings.configure()
-except RuntimeError, msg:
-    print msg
 
 MSID = dict(dea='1PDEAAT', pin='1PIN1AT')
 YELLOW = dict(dea=characteristics.T_dea_yellow, pin=characteristics.T_pin_yellow)
@@ -226,7 +217,7 @@ def main(opt):
     write_temps(opt, times, temps)
 
     # Validation
-    plots_validation = make_validation_plots(opt.outdir, tlm, db, state0)
+    plots_validation = make_validation_plots(opt.outdir, tlm, db)
 
     write_index_rst(opt, plots, viols, proc, plots_validation)
     rst_to_html(opt, proc)
@@ -237,6 +228,7 @@ def main(opt):
 def get_bs_cmds(oflsdir):
     """Return commands for the backstop file in opt.oflsdir.
     """
+    import Ska.ParseCM
     backstop_file = globfile(os.path.join(opt.oflsdir, 'CR*.backstop'))
     logging.info('Using backstop file %s' % backstop_file)
     bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
@@ -245,7 +237,7 @@ def get_bs_cmds(oflsdir):
 
     return bs_cmds
 
-def get_telem_values(tstart, colspecs, days=14):
+def get_telem_values(tstart, colspecs, days=14, dt=32.8):
     """
     Fetch last ``days`` of available ``colspecs`` telemetry values before
     time ``tstart``.
@@ -257,11 +249,11 @@ def get_telem_values(tstart, colspecs, days=14):
     """
     tstart = DateTime(tstart).secs
     start = DateTime(tstart - days * 86400).date
-    stop = DateTime(tstart - 2 * 86400).date
+    stop = DateTime(tstart).date
     logging.info('Fetching telemetry between %s and %s' % (start, stop))
     colnames, vals = Ska.TelemArchive.fetch.fetch(start=start,
                                                   stop=stop,
-                                                  dt=32.8,
+                                                  dt=dt,
                                                   colspecs=colspecs)
 
     # Finished when we found at least 10 good records (5 mins)
@@ -274,6 +266,7 @@ def rst_to_html(opt, proc):
     """Run rst2html.py to render index.rst as HTML"""
 
     # First copy CSS files to outdir
+    import Ska.Shell
     import docutils.writers.html4css1
     dirname = os.path.dirname(docutils.writers.html4css1.__file__)
     shutil.copy2(os.path.join(dirname, 'html4css1.css'), opt.outdir)
@@ -353,6 +346,14 @@ def write_index_rst(opt, plots, viols, proc, plots_validation):
     """
     Make output text (in ReST format) in opt.outdir.
     """
+    # Django setup (used for template rendering)
+    import django.template
+    import django.conf
+    try:
+        django.conf.settings.configure()
+    except RuntimeError, msg:
+        print msg
+
     outfile = os.path.join(opt.outdir, 'index.rst')
     logging.info('Writing report file %s' % outfile)
     django_context = django.template.Context({'opt': opt,
@@ -485,39 +486,56 @@ def make_check_plots(opt, states, times, temps):
 
     return plots
 
-def make_validation_plots(outdir, tlm, db, state0):
+def get_states(datestart, datestop, db):
+    """Get states exactly covering date range
+
+    :param datestart: start date
+    :param datestop: stop date
+    :param db: database handle
+    :returns: np recarry of states
+    """
+    datestart = DateTime(datestart).date
+    datestop = DateTime(datestop).date
+    logging.info('Getting commanded states between %s - %s'  %
+                 (datestart, datestop))
+                 
+    # Get all states that intersect specified date range
+    cmd = """SELECT * FROM cmd_states
+             WHERE datestop > '%s' AND datestart < '%s'
+             ORDER BY datestart""" % (datestart, datestop)
+    logging.debug('Query command: %s' % cmd)
+    states = db.fetchall(cmd)
+    logging.info('Found %d commanded states' % len(states))
+
+    # Add power columns to states and tlm
+    states = Ska.Numpy.add_column(states, 'power', get_power(states))
+    states[0].datestart = datestart
+    states[0].tstart = DateTime(datestart).secs
+    states[-1].datestop = datestop
+    states[-1].tstop = DateTime(datestop).secs
+
+    return states
+
+def make_validation_plots(outdir, tlm, db):
     """
     Make validation output plots.
     
     :param outdir: output directory
     :param tlm: telemetry
-
+    :param db: database handle
     :returns: list of plot info including plot file names
     """
-    tlm_datestart = DateTime(tlm[0].date).date
-    tlm_datestop = DateTime(tlm[-1].date).date
-    logging.info('Starting validation processing between %s - %s'  %
-                 (tlm_datestart, tlm_datestop))
-                 
-    cmd = """SELECT * FROM cmd_states
-             WHERE datestop > '%s'
-             AND datestart < '%s'
-             ORDER BY datestart""" % (tlm_datestart, tlm_datestop)
-    logging.debug('Query command: %s' % cmd)
-    states = db.fetchall(cmd)
-    logging.info('Found %s commanded states for validation' % len(states))
-
-    # Add power columns to states and tlm
-    states = Ska.Numpy.add_column(states, 'power', get_power(states))
+    states = get_states(tlm[0].date, tlm[-1].date, db)
     tlm = Ska.Numpy.add_column(tlm, 'power', smoothed_power(tlm))
 
-    state0['tstart'] = tlm[0].date - 30
-    state0.update({'T_dea': np.mean(tlm['1pdeaat'][:10]),
-                   'T_pin': np.mean(tlm['1pin1at'][:10])})
+    T_dea0 =  np.mean(tlm['1pdeaat'][:10])
+    T_pin0 = np.mean(tlm['1pin1at'][:10])
 
     # Create array of times at which to calculate PSMC temperatures, then do it.
     logging.info('Calculating PSMC thermal model for validation')
-    T_pin, T_dea = twodof.calc_twodof_model(states, state0['T_pin'], state0['T_dea'], tlm.date)
+    T_pin, T_dea = twodof.calc_twodof_model(states, T_pin0, T_dea0, tlm.date)
+
+    # Interpolate states onto the tlm.date grid
     state_vals = cmd_states.interpolate_states(states, tlm.date)
     pred = {'1pdeaat': T_dea,
             '1pin1at': T_pin,

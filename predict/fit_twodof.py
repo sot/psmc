@@ -56,7 +56,7 @@ parnames = sorted(twodof.pardefault)
 def psmc_temps(msid):
     """Evaluate PSMC temperatures at given times."""
     def psmc_temp(pars, t):
-        return twomass.calc_temp(t, msid=msid, par=dict(zip(parnames, pars)))
+        return twomass.calc_model(t, msid=msid, par=dict(zip(parnames, pars)))
     return psmc_temp
 
 if 'states08' not in globals():
