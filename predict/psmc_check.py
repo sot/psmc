@@ -13,27 +13,22 @@ plots comparing predicted values to telemetry for the previous three weeks.
 
 Command line options
 ---------------------
- =================== ========================================  ===================
- Option              Description                                Default
- =================== ========================================  ===================
- help                Show help message and exit
- outdir=OUTDIR       Output directory                          psmc_check
- oflsdir=OFLSDIR     Load products OFLS directory              None
- power=POWER         Starting PSMC power (watts)               From telemetry
- simpos=SIMPOS       Starting SIM-Z position (steps)           From telemetry
- pitch=PITCH         Starting pitch (deg)                      From telemetry
- T_dea=T_DEA         Starting 1pdeaat temperature (degC)       From telemetry
- T_pin=T_PIN         Starting 1pin1at temperature (degC)       From telemetry
- dt=DT               Time step for model evaluation (sec)      32.8
- days=DAYS           Days of validation data                   21
- verbose=VERBOSE     Verbosity (0=quiet, 1=normal, 2=debug)    1 (normal)
- =================== ========================================  ===================
-
-If the ``--outdir`` option is specified then the output plots are created as
-PNG files and the report information goes into output text files in that
-directory.  The latter are processed to generate an HTML report.  With no
-``--outdir`` option the report information is printed to the screen and the
-plots are opened as plot windows that can be manipulated interactively.
+===================== ====================================== ===================
+Option                Description                            Default           
+===================== ====================================== ===================
+-h, --help            show this help message and exit                           
+--outdir=OUTDIR       Output directory                       out         
+--oflsdir=OFLSDIR     Load products OFLS directory           None               
+--power=POWER         Starting PSMC power (watts)            From telemetry     
+--simpos=SIMPOS       Starting SIM-Z position (steps)        From telemetry     
+--pitch=PITCH         Starting pitch (deg)                   From telemetry     
+--T_dea=T_DEA         Starting 1pdeaat temperature (degC)    From telemetry     
+--T_pin=T_PIN         Starting 1pin1at temperature (degC)    From telemetry     
+--dt=DT               Time step for model evaluation (sec)   32.8               
+--days=DAYS           Days of validation data (days)         21                 
+--traceback=TRACEBACK Enable tracebacks                      True
+--verbose=VERBOSE     Verbosity (0=quiet, 1=normal, 2=debug) 1 (normal)
+===================== ====================================== ===================
 
 The model starting parameters (temperature and spacecraft state) can be
 specified in one of two ways:
@@ -73,9 +68,6 @@ import Chandra.cmd_states as cmd_states
 import characteristics
 import twodof
 
-# import state_commands
-# import states
-
 # Matplotlib setup
 # Use Agg backend for command-line (non-interactive) operation
 import matplotlib
@@ -88,12 +80,14 @@ MSID = dict(dea='1PDEAAT', pin='1PIN1AT')
 YELLOW = dict(dea=characteristics.T_dea_yellow, pin=characteristics.T_pin_yellow)
 MARGIN = dict(dea=characteristics.T_dea_margin, pin=characteristics.T_pin_margin)
 
+TASK_DATA = os.path.join(os.environ['SKA'], 'data', 'psmc')
+
 def get_options():
     from optparse import OptionParser
     parser = OptionParser()
     parser.set_defaults()
     parser.add_option("--outdir",
-                      default="psmc_check",
+                      default="out",
                       help="Output directory")
     parser.add_option("--oflsdir",
                       default="/data/mpcrit1/mplogs/2008/NOV2408/oflsc",
@@ -152,7 +146,7 @@ def main(opt):
 
     # Connect to database (NEED TO USE aca_read)
     logging.info('Connecting to database to get cmd_states')
-    db = Ska.DBI.DBI(dbi='sybase') # , server='sybase', user='aca_read', database='aca')
+    db = Ska.DBI.DBI(dbi='sybase', server='sybase', user='aca_read', database='aca')
 
     # Get tstart, tstop, commands from backstop file in opt.oflsdir
     bs_cmds = get_bs_cmds(opt.oflsdir)
@@ -173,8 +167,12 @@ def main(opt):
                            days=opt.days)
 
     # Try to make initial state0 from cmd line options
-    state0 = dict((x, getattr(opt, x)) for x in ('pitch', 'simpos', 'power', 'T_dea', 'T_pin'))
-    state0.update({'tstart': tstart-30, 'tstop': tstart})
+    state0 = dict((x, getattr(opt, x)) for x in ('pitch', 'simpos',
+                                                 'power', 'T_dea', 'T_pin'))
+    state0.update({'tstart': tstart-30,
+                   'tstop': tstart,
+                   'datestart': DateTime(tstart-30).date,
+                   'datestop': DateTime(tstart).date})
 
     # If cmd lines options were not fully specified then get state0 as last
     # cmd_state that starts within available telemetry.  Update with the
@@ -189,7 +187,11 @@ def main(opt):
                                            pformat(state0)))
 
     # Get the commands after end of state0 through first backstop command time
-    db_cmds = cmd_states.get_cmds(state0['tstop'], bs_cmds[0]['time'], db)
+    cmds_datestart = DateTime(state0['tstop']).date
+    cmds_datestop = DateTime(bs_cmds[0]['time']).date
+    db_cmds = cmd_states.get_cmds(cmds_datestart, cmds_datestop, db)
+    logging.info('Got %d cmds from database between %s and %s' %
+                  (len(db_cmds), cmds_datestart, cmds_datestop))
 
     # Get the commanded states from state0 through the end of the backstop commands
     states = cmd_states.get_states(state0, db_cmds + bs_cmds)
@@ -211,7 +213,7 @@ def main(opt):
     plt.rc("xtick", labelsize=10)
     plt.rc("ytick", labelsize=10)
     temps = dict(dea=T_dea, pin=T_pin)
-    plots = make_check_plots(opt, states, times, temps)
+    plots = make_check_plots(opt, states, times, temps, tstart)
     viols = make_viols(opt, states, times, temps)
     write_states(opt, states)
     write_temps(opt, times, temps)
@@ -271,8 +273,7 @@ def rst_to_html(opt, proc):
     dirname = os.path.dirname(docutils.writers.html4css1.__file__)
     shutil.copy2(os.path.join(dirname, 'html4css1.css'), opt.outdir)
 
-    dirname = os.path.dirname(__file__)
-    shutil.copy2(os.path.join(dirname, 'psmc_check.css'), opt.outdir)
+    shutil.copy2(os.path.join(TASK_DATA, 'psmc_check.css'), opt.outdir)
 
     spawn = Ska.Shell.Spawn(stdout=None)
     infile = os.path.join(opt.outdir, 'index.rst')
@@ -362,7 +363,7 @@ def write_index_rst(opt, plots, viols, proc, plots_validation):
                                               'proc': proc,
                                               'plots_validation': plots_validation,
                                               })
-    index_template = open('index_template.rst').read()
+    index_template = open(os.path.join(TASK_DATA, 'index_template.rst')).read()
     index_template = re.sub(r' %}\n', ' %}', index_template)
     template = django.template.Template(index_template)
     open(outfile, 'w').write(template.render(django_context))
@@ -431,7 +432,7 @@ def plot_two(fig_id, x, y, x2, y2,
 
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
 
-def make_check_plots(opt, states, times, temps):
+def make_check_plots(opt, states, times, temps, tstart):
     """
     Make output plots.
     
@@ -440,10 +441,14 @@ def make_check_plots(opt, states, times, temps):
     :param times: time stamps (sec) for temperature arrays
     :param T_pin: 1pin1at temperatures
     :param T_dea: 1pddeat temperatures
+    :param tstart: load start time 
     :rtype: dict of review information including plot file names
     """
     plots = {}
     
+    # Start time of loads being reviewed expressed in units for plotdate()
+    load_start = Ska.Matplotlib.cxctime2plotdate([tstart])[0]
+
     logging.info('Making temperature check plots')
     for fig_id, msid in enumerate(('dea', 'pin')):
         plots[msid] = plot_two(fig_id=fig_id+1,
@@ -459,6 +464,7 @@ def make_check_plots(opt, states, times, temps):
                                )
         plots[msid]['ax'].axhline(YELLOW[msid], linestyle='-', color='y', linewidth=2.0)
         plots[msid]['ax'].axhline(YELLOW[msid] - MARGIN[msid], linestyle='--', color='y', linewidth=2.0)
+        plots[msid]['ax'].axvline(load_start, linestyle=':', color='g', linewidth=1.0)
         filename = MSID[msid].lower() + '.png'
         outfile = os.path.join(opt.outdir, filename)
         logging.info('Writing plot file %s' % outfile)
@@ -477,6 +483,7 @@ def make_check_plots(opt, states, times, temps):
                                 ylabel2='SIM-Z (steps)',
                                 ylim2=(-105000, 105000),
                            )
+    plots['pow_sim']['ax'].axvline(load_start, linestyle=':', color='g', linewidth=1.0)
     plots['pow_sim']['fig'].subplots_adjust(right=0.85)
     filename = 'pow_sim.png'
     outfile = os.path.join(opt.outdir, filename)

@@ -1,3 +1,127 @@
+****
+Fitting dea only with neldermead
+date1 = Chandra.Time.DateTime('2009-04-01T00:00:00') - 180 days
+
+Method                = neldermead
+Statistic             = chi2gehrels
+Initial fit statistic = 73297.8
+INFO:sherpa.ui.utils:Dataset               = 1
+Method                = neldermead
+Statistic             = chi2gehrels
+Initial fit statistic = 122175
+Final fit statistic   = 113868 at function evaluation 3154
+Data points           = 51840
+Degrees of freedom    = 51827
+Probability [Q-value] = 0
+Reduced statistic     = 2.19707
+Change in statistic   = 8307.54
+   dea.acis150    27.8756     
+   dea.acis50     54.5419     
+   dea.acis90     28.8955     
+   dea.c1         181.485     
+   dea.c2         26.9223     
+   dea.hrci150    36.9463     
+   dea.hrci50     41.1582     
+   dea.hrci90     26.2689     
+   dea.hrcs150    38.0314     
+   dea.hrcs50     32.6549     
+   dea.hrcs90     33.0531     
+   dea.u01        11.9062     
+   dea.u12        5.66494     
+
+****
+Fitting dea only with neldermead
+date1 = Chandra.Time.DateTime('2009-04-03T00:00:00') - 90 days
+
+Final fit statistic   = 54698.7 at function evaluation 4539
+Data points           = 25920
+Degrees of freedom    = 25906
+Probability [Q-value] = 0
+Reduced statistic     = 2.11143
+Change in statistic   = 18599.1
+   dea.acis150    28.0263     
+   dea.acis50     54.036      
+   dea.acis90     28.1335     
+   dea.c1         182.457     
+   dea.c2         27.6601     
+   dea.hrci150    31.9251     
+   dea.hrci50     41.7947     
+   dea.hrci90     17.7964     
+   dea.hrcs150    38.0591     
+   dea.hrcs50     32.588      
+   dea.hrcs90     33.0679     
+   dea.u01        12.477      
+   dea.u01quad    -0.0935323  
+   dea.u12        5.7223      
+
+
+****
+Fitting dea only levmar
+date1 = Chandra.Time.DateTime('2009-04-03T00:00:00') - 90 days
+
+Initial fit statistic = 76210.7
+Final fit statistic   = 65076.8 at function evaluation 31
+Data points           = 25920
+Degrees of freedom    = 25915
+Probability [Q-value] = 0
+Reduced statistic     = 2.51116
+Change in statistic   = 8449.16
+
+Done at Sun May 17 16:04:29 2009
+usermodel.dea
+   Param        Type          Value          Min          Max      Units
+   -----        ----          -----          ---          ---      -----
+   dea.acis150  frozen      28.7294 -3.40282e+38  3.40282e+38           
+   dea.acis50   frozen      56.3515 -3.40282e+38  3.40282e+38           
+   dea.acis90   frozen      28.8438 -3.40282e+38  3.40282e+38           
+   dea.c1       frozen      110.472 -3.40282e+38  3.40282e+38           
+   dea.c2       frozen      23.2613 -3.40282e+38  3.40282e+38           
+   dea.hrci150  frozen      34.7896 -3.40282e+38  3.40282e+38           
+   dea.hrci50   frozen      39.8758 -3.40282e+38  3.40282e+38           
+   dea.hrci90   frozen      35.5686 -3.40282e+38  3.40282e+38           
+   dea.hrcs150  frozen      39.5472 -3.40282e+38  3.40282e+38           
+   dea.hrcs50   frozen      33.6949 -3.40282e+38  3.40282e+38           
+   dea.hrcs90   frozen       33.217 -3.40282e+38  3.40282e+38           
+   dea.u01      frozen       8.4741 -3.40282e+38  3.40282e+38           
+   dea.u01quad  frozen     -2.28499 -3.40282e+38  3.40282e+38           
+   dea.u12      frozen      6.27225 -3.40282e+38  3.40282e+38           
+
+****
+Fitting dea and pin
+date1 = Chandra.Time.DateTime('2009-04-03T00:00:00')
+days = 90
+Final fit statistic   = 158237 at function evaluation 37
+Data points           = 51840
+Degrees of freedom    = 51835
+Probability [Q-value] = 0
+Reduced statistic     = 3.05271
+Change in statistic   = 22712.2
+   dea.c1         93.5736     
+   dea.c2         12.9992     
+   dea.u01        5.64142     
+   dea.u01quad    -1.09691    
+   dea.u12        8.29004     
+Done at Sun May 17 15:58:12 2009
+usermodel.dea
+   Param        Type          Value          Min          Max      Units
+   -----        ----          -----          ---          ---      -----
+   dea.acis150  frozen      29.0302 -3.40282e+38  3.40282e+38           
+   dea.acis50   frozen      56.0669 -3.40282e+38  3.40282e+38           
+   dea.acis90   frozen      29.7084 -3.40282e+38  3.40282e+38           
+   dea.c1       frozen      93.5736 -3.40282e+38  3.40282e+38           
+   dea.c2       frozen      12.9992 -3.40282e+38  3.40282e+38           
+   dea.hrci150  frozen      41.3023 -3.40282e+38  3.40282e+38           
+   dea.hrci50   frozen      40.5857 -3.40282e+38  3.40282e+38           
+   dea.hrci90   frozen      30.6498 -3.40282e+38  3.40282e+38           
+   dea.hrcs150  frozen      39.9622 -3.40282e+38  3.40282e+38           
+   dea.hrcs50   frozen      33.4304 -3.40282e+38  3.40282e+38           
+   dea.hrcs90   frozen      33.2913 -3.40282e+38  3.40282e+38           
+   dea.u01      frozen      5.64142 -3.40282e+38  3.40282e+38           
+   dea.u01quad  frozen     -1.09691 -3.40282e+38  3.40282e+38           
+   dea.u12      frozen      8.29004 -3.40282e+38  3.40282e+38           
+
+
+
 date0 = Chandra.Time.DateTime('2008-09-01T00:00:00')
 date1 = Chandra.Time.DateTime('2008-12-01T00:00:00')
 with DeadChi and neldermead:

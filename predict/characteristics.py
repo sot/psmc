@@ -30,5 +30,20 @@ T_pin_red = 46.0                        # 1PIN1AT red limit (degC)
 
 # Mission planning margin from yellow limit reflecting accepted level of
 # uncertainty (1%) in PSMC model predictions.
-T_dea_margin = 17 # 4.5
-T_pin_margin = 15 # 4.5                 
+T_dea_margin = 4.5
+T_pin_margin = 4.5                 
+
+twodof_par = dict(acis150  =  28.0263,     
+                  acis50   =  54.036 ,     
+                  acis90   =  28.1335,     
+                  c1       =  182.457,     
+                  c2       =  27.6601,     
+                  hrci150  =  31.9251,     
+                  hrci50   =  41.7947,     
+                  hrci90   =  17.7964,     
+                  hrcs150  =  38.0591,     
+                  hrcs50   =  32.588 ,     
+                  hrcs90   =  33.0679,     
+                  u01      =  12.477 ,     
+                  u01quad  =  -0.0935,
+                  u12      =  5.7223      )

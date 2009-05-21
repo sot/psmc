@@ -1,8 +1,5 @@
 """
-******   2mass.py   *******
-
-Define constants and a TwoMass class that calculates the predicted temperature
-using this model.
+Calculate ACIS PSMC temperatures using a two degree-of-freedom model.
 """
 
 import numpy as np
@@ -19,7 +16,7 @@ KtoC = -CtoK
 
 # Based on chi2gehrels fit of both 1pdeaat and 1pin1at
 # over the range 2008-04-09 - 2008-12-28
-pardefault = dict(acis150 =    27.1999,
+_pardefault = dict(acis150 =    27.1999,
                   acis50  =    55.4133,
                   acis90  =    31.2034,
                   c1      =    122.204,
@@ -33,6 +30,39 @@ pardefault = dict(acis150 =    27.1999,
                   u01     =    6.23487,
                   u01quad =  -0.524545,
                   u12     =    7.76193)
+
+# Based on levmar fit of both 1pdeaat and 1pin1at
+# over the range 2009-01-01 - 2009-04-01
+pardefault = dict(acis150  =      29.0302,
+                  acis50   =      56.0669,
+                  acis90   =      29.7084,
+                  c1       =      93.5736,
+                  c2       =      12.9992,
+                  hrci150  =      41.3023,
+                  hrci50   =      40.5857,
+                  hrci90   =      30.6498,
+                  hrcs150  =      39.9622,
+                  hrcs50   =      33.4304,
+                  hrcs90   =      33.2913,
+                  u01      =      5.64142,
+                  u01quad  =     -1.09691,
+                  u12      =      8.29004)
+
+# From levmar fits of only 1pdeaat over 2009-01-03 - 2009-04-03
+_pardefault = dict(acis150  =  28.0263,     
+                  acis50   =  54.036 ,     
+                  acis90   =  28.1335,     
+                  c1       =  182.457,     
+                  c2       =  27.6601,     
+                  hrci150  =  31.9251,     
+                  hrci50   =  41.7947,     
+                  hrci90   =  17.7964,     
+                  hrcs150  =  38.0591,     
+                  hrcs50   =  32.588 ,     
+                  hrcs90   =  33.0679,     
+                  u01      =  12.477 ,     
+                  u01quad  =  -0.0935,
+                  u12      =  5.7223      )
 
 def Tf_zero_power(par, pitch, simz):
     """Settling temperature (Tf) at zero PSMC power.
@@ -137,7 +167,7 @@ class TwoDOF(object):
         out = self.predT[0,:] if msid == '1pin1at' else self.predT[1,:]
         return Ska.Numpy.interpolate(out + KtoC, self.tval, t)
 
-    def calc_model(self, t, par=pardefault, msid='1pdeaat'):
+    def calc_model(self, t, par=None, msid='1pdeaat'):
         """
         :param t: array of times at which to return the model temperatures
         :param par: model parameters
@@ -145,6 +175,9 @@ class TwoDOF(object):
 
         :rtype: array of temperatures for C{msid}
         """
+        if par is None:
+            par = pardefault
+
         # If params are unchanged then use existing values
         if par == self.par:
             return self.interpolate_msid_temp(msid, t)
@@ -187,7 +220,7 @@ class TwoDOF(object):
         
         return self.interpolate_msid_temp(msid, t)
 
-def calc_twodof_model(states, T_pin0, T_dea0, times, dt=32.8):
+def calc_twodof_model(states, T_pin0, T_dea0, times, dt=32.8, par=None):
     """Calculate the PSMC temperatures 1PDEAAT and 1PIN1AT given the list of
     configuration ``states`` and initial temperatures ``dea_T0`` and ``pin_T0``.
 
@@ -195,14 +228,16 @@ def calc_twodof_model(states, T_pin0, T_dea0, times, dt=32.8):
       tstart  tstop  power  pitch  simpos
 
     :param states: iterable list of states (must be contiguous)
-    :param pin0: initial value (degC) of 1pin1at at states[0]['tstart']
-    :param dea0: initial value (degC) of 1pdeaat at states[0]['tstart']
+    :param T_pin0: initial value (degC) of 1pin1at at states[0]['tstart']
+    :param T_dea0: initial value (degC) of 1pdeaat at states[0]['tstart']
     :param times: array of times at which to return the model temperatures
     :param dt: approximate time spacing for calculating model values (secs)
+    :param par: model parameters dictionary
 
     :rtype: predicted temperature arrays (T_pin, T_dea)
     """
-    modelpar = pardefault               # Model parameters from "characteristics"
+    if par is None:
+        par = pardefault         # Model parameters from "characteristics"
 
     predTs = []
     tvals = []
@@ -210,10 +245,10 @@ def calc_twodof_model(states, T_pin0, T_dea0, times, dt=32.8):
                    [T_dea0]]) + CtoK
 
     for state in states:
-        U01 = modelpar['u01'] + modelpar['u01quad'] * ((state['pitch']-110)/60)**2
-        U12 = modelpar['u12']
-        C1 = modelpar['c1']
-        C2 = modelpar['c2']
+        U01 = par['u01'] + par['u01quad'] * ((state['pitch']-110)/60)**2
+        U12 = par['u12']
+        C1 = par['c1']
+        C2 = par['c2']
 
         M = np.array([[-(U01 + U12) / C1 ,  U12 / C1],
                       [U12 / C2          , -U12 / C2]])
@@ -227,7 +262,7 @@ def calc_twodof_model(states, T_pin0, T_dea0, times, dt=32.8):
         tval = np.linspace(state['tstart'], state['tstop'], n_t+2)
 
         # Calculated predicted temperatures for this state
-        predT = calc_state_temps(state, modelpar, tval - t0, Ti,
+        predT = calc_state_temps(state, par, tval - t0, Ti,
                                  eigvals, eigvecs, eigvecinvs,
                                  U01, C1, C2)
         tvals.append(tval)
