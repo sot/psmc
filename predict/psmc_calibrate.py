@@ -106,8 +106,8 @@ def psmc_temps_model_multi(msid, tlm, states):
 
     return psmc_temp
 
-ndays = 90 # 180 # 90
-date1 = Chandra.Time.DateTime('2009-01-01T00:00:00')
+ndays = 180 # 90
+date1 = Chandra.Time.DateTime('2009-04-01T00:00:00')
 
 if 'tlm' not in globals():
     print 'Fetching telemetry for %d days before %s' % (ndays, date1.date)
@@ -168,6 +168,12 @@ hy, hx = np.histogram(dat1.y - mp.y, bins=30)
 add_window(5.5, 4, 'inches')
 add_histogram(hx[:-1], hx[1:], hy)
 print_window('fit_resid_hist', ['format', 'png'])
+
+import numpy
+add_window(5.5,4,'inches')
+add_curve(dat1.y + np.random.uniform(-1.25, 1.25, len(dat1.y), dat1.y - mp.y)
+ahelp('set_curve')
+set_curve(['line.style', 'none', 'symbol.style', 'point'])
 
 def fitall():
     for detector in ('acis', 'hrcs', 'hrci'):

@@ -516,10 +516,16 @@ def get_states(datestart, datestop, db):
 
     # Add power columns to states and tlm
     states = Ska.Numpy.add_column(states, 'power', get_power(states))
-    states[0].datestart = datestart
-    states[0].tstart = DateTime(datestart).secs
-    states[-1].datestop = datestop
-    states[-1].tstop = DateTime(datestop).secs
+
+    # Set start and end state date/times to match telemetry span.  Extend the
+    # state durations by a small amount because of a precision issue converting
+    # to date and back to secs.  (The reference tstop could be just over the
+    # 0.001 precision of date and thus cause an out-of-bounds error when
+    # interpolating state values).
+    states[0].tstart = DateTime(datestart).secs-0.01
+    states[0].datestart = DateTime(states[0].tstart).date
+    states[-1].tstop = DateTime(datestop).secs+0.01
+    states[-1].datestop = DateTime(states[-1].tstop).date
 
     return states
 
