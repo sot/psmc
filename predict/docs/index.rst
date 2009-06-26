@@ -73,6 +73,70 @@ configurations may fail.
  /proj/sot/ska/bin/psmc_check --outdir=out --oflsdir=/data/mpcrit1/mplogs/2009/MAY1809/oflsb
  /proj/sot/ska/bin/psmc_check --simpos -99616 --ra 30 --dec 40 --roll 50 --T_dea 40 --T_pin 30 --power 80
 
+psmc_calibrate.py
+========================
+Calibrate PSMC model coefficients using telemetry from specified time range.
+
+Current calibration plots
+---------------------------
+**Fit and residuals (data-model)**
+
+.. image:: ../fit_resid.png
+
+**Fit residual histogram**
+
+.. image:: ../fit_resid_hist.png
+
+**Residuals (data-model) vs. temperature (telemetry)**
+
+.. image:: ../fit_resid_vs_temp.png
+
+**Pitch vs. SIM-Z coverage**
+
+.. image:: ../fit_pitch_simpos.png
+
+**SCS 107 settling temperatures**
+
+.. image:: ../scs107_settling.png
+
+Update procedure
+----------------
+- Use the following commands from the shell to generate a new set of PSMC model
+  parameters::
+
+    ciao
+    setenv PYTHONPATH /home/aldcroft/ciaopy/lib/python
+    psmc_calibrate.py --stopdate <stopdate> | tee psmc_calibrate.log
+
+- Compare parameters to existing values.  Watch for outliers and examine
+  fit_pitch_simpos.png for coverage.  Note that this plot shows coverage
+  for the ACIS time interval (typically 180 days) instead of the HRC
+  interval (typically 360 days).
+
+- Update the model_par definition in characteristics.py.
+
+- Update ``VERSION`` in ``Makefile``.
+
+- Test the new characteristics file by running::
+
+    /proj/sot/ska/bin/psmc_check --oflsdir <recent_ofls_dir> --outdir out_release
+    ./psmc_check.py --oflsdir <recent_ofls_dir> --outdir out_pre
+
+  Ensure that results are sensible and that the ``VERSION`` matches expectation.
+
+- Commit the changes::
+
+    svn commit -m "Update model calibration with data through <stopdate>: version <VERSION>"
+
+- Obtain review approval at the load review, install new files, and test::
+
+    make docs
+    make dist
+    make install
+    /proj/sot/ska/bin/psmc_check --oflsdir <recent_ofls_dir> --outdir out_post
+
+  Make sure that ``out_post`` and ``out_pre`` results are identical.
+
 Tools
 ====================
 
@@ -81,11 +145,4 @@ Tools
 
    psmc_check
    twodof
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 

@@ -33,17 +33,21 @@ T_pin_red = 46.0                        # 1PIN1AT red limit (degC)
 T_dea_margin = 4.5
 T_pin_margin = 4.5                 
 
-twodof_par = dict(acis150  =  28.0263,     
-                  acis50   =  54.036 ,     
-                  acis90   =  28.1335,     
-                  c1       =  182.457,     
-                  c2       =  27.6601,     
-                  hrci150  =  31.9251,     
-                  hrci50   =  41.7947,     
-                  hrci90   =  17.7964,     
-                  hrcs150  =  38.0591,     
-                  hrcs50   =  32.588 ,     
-                  hrcs90   =  33.0679,     
-                  u01      =  12.477 ,     
-                  u01quad  =  -0.0935,
-                  u12      =  5.7223      )
+# Based on levmar fit of both 1pdeaat and 1pin1at
+# over the range 2009-01-01 - 2009-04-01
+model_par = dict(acis150  =      29.0302,
+                 acis50   =      56.0669,
+                 acis90   =      29.7084,
+                 c1       =      93.5736,
+                 c2       =      12.9992,
+                 hrci150 =  35.703,
+                 hrci50  =  42.717,
+                 hrci90  =  29.420,
+                 hrcs150 =  39.351,
+                 hrcs50  =  33.167,
+                 hrcs90  =  31.769,
+                 u01      =      5.64142,
+                 u01quad  =     -1.09691,
+                 u12      =      8.29004)
+
+

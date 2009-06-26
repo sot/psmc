@@ -1,5 +1,6 @@
 import numpy as np
 import twodof
+import characteristics as char
 
 cols = 'tstart  tstop  power  pitch  simpos'.split()
 states = []
@@ -14,7 +15,7 @@ dea0 = 25.
 pin0 = 35.
 times = np.arange(states['tstart'][0], states['tstop'][-1], 32.8)
 
-T_pin, T_dea = twodof.calc_twodof_model(states, pin0, dea0, times)
+T_pin, T_dea = twodof.calc_twodof_model(states, pin0, dea0, times, par=char.model_par)
 clf()
 plot(times, T_pin, label='1pin1at')
 plot(times, T_dea, label='1pdeaat')

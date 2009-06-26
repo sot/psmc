@@ -1,3 +1,61 @@
+# Fit over the range 2008-06-05 to 2009-06-01, first with fitall(), then
+# freeze hrci*, then fit().  Results may be biased downward in temp due to
+# somewhat lower temps at beginning of interval relative to end.  Thus do NOT
+# use this overall for final calibration EXCEPT do use the hrc* values since
+# the large time span will give best coverage.
+model_par = dict(
+                 acis150 =  28.435,
+                 acis50  =  55.911,
+                 acis90  =  27.439,
+                 c1      = 107.377,
+                 c2      =  12.460,
+                 hrci150 =  35.703,
+                 hrci50  =  42.717,
+                 hrci90  =  29.420,
+                 hrcs150 =  39.351,
+                 hrcs50  =  33.167,
+                 hrcs90  =  31.769,
+                 u01     =   5.945,
+                 u01quad =  -1.097,
+                 u12     =   8.430,
+                )
+
+
+# Based on chi2gehrels fit of both 1pdeaat and 1pin1at
+# over the range 2008-04-09 - 2008-12-28
+_pardefault = dict(acis150 =    27.1999,
+                  acis50  =    55.4133,
+                  acis90  =    31.2034,
+                  c1      =    122.204,
+                  c2      =    16.5221,
+                  hrci150 =    33.2693,
+                  hrci50  =    43.8671,
+                  hrci90  =    29.8505,
+                  hrcs150 =     38.385,
+                  hrcs50  =    33.1306,
+                  hrcs90  =    32.2106,
+                  u01     =    6.23487,
+                  u01quad =  -0.524545,
+                  u12     =    7.76193)
+
+# From levmar fits of only 1pdeaat over 2009-01-03 - 2009-04-03
+_pardefault = dict(acis150  =  28.0263,     
+                  acis50   =  54.036 ,     
+                  acis90   =  28.1335,     
+                  c1       =  182.457,     
+                  c2       =  27.6601,     
+                  hrci150  =  31.9251,     
+                  hrci50   =  41.7947,     
+                  hrci90   =  17.7964,     
+                  hrcs150  =  38.0591,     
+                  hrcs50   =  32.588 ,     
+                  hrcs90   =  33.0679,     
+                  u01      =  12.477 ,     
+                  u01quad  =  -0.0935,
+                  u12      =  5.7223      )
+
+
+
 ****
 Fitting dea only with neldermead
 date1 = Chandra.Time.DateTime('2009-04-01T00:00:00') - 180 days

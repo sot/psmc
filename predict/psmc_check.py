@@ -206,7 +206,8 @@ def main(opt):
     # Create array of times at which to calculate PSMC temperatures, then do it.
     times = np.arange(state0['tstart'], tstop, opt.dt)
     logging.info('Calculating PSMC thermal model')
-    T_pin, T_dea = twodof.calc_twodof_model(states, state0['T_pin'], state0['T_dea'], times)
+    T_pin, T_dea = twodof.calc_twodof_model(states, state0['T_pin'], state0['T_dea'], times,
+                                            characteristics.model_par)
 
     # Make the PSMC limit check plots and data files
     plt.rc("axes", labelsize=10, titlesize=12)
@@ -546,7 +547,8 @@ def make_validation_plots(outdir, tlm, db):
 
     # Create array of times at which to calculate PSMC temperatures, then do it.
     logging.info('Calculating PSMC thermal model for validation')
-    T_pin, T_dea = twodof.calc_twodof_model(states, T_pin0, T_dea0, tlm.date)
+    T_pin, T_dea = twodof.calc_twodof_model(states, T_pin0, T_dea0, tlm.date,
+                                            characteristics.model_par)
 
     # Interpolate states onto the tlm.date grid
     state_vals = cmd_states.interpolate_states(states, tlm.date)
