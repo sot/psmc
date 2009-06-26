@@ -1,0 +1,110 @@
+Fetching telemetry for 360 days before 2009:151:23:58:53.816
+Getting states between 329097600.0 : 360201300.0
+Setting dataset 1 = 1pdeaat
+Setting dataset 2 = 1pin1at
+Fitting HRC-S and HRC-I settling temps at Thu Jun 25 16:37:50 2009
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .Datasets              = 1, 2
+Method                = levmar
+Statistic             = chi2gehrels
+Initial fit statistic = 706588
+Final fit statistic   = 639462 at function evaluation 106
+Data points           = 207358
+Degrees of freedom    = 207344
+Probability [Q-value] = 0
+Reduced statistic     = 3.08406
+Change in statistic   = 67126.9
+   dea.acis150    28.4253     
+   dea.acis50     55.7079     
+   dea.acis90     27.4679     
+   dea.c1         107.356     
+   dea.c2         12.4167     
+   dea.hrci150    35.747      
+   dea.hrci50     42.5997     
+   dea.hrci90     29.4299     
+   dea.hrcs150    39.3603     
+   dea.hrcs50     33.0283     
+   dea.hrcs90     32.1263     
+   dea.u01        5.74671     
+   dea.u01quad    -0.737779   
+   dea.u12        8.43105     
+Done at Thu Jun 25 16:48:29 2009
+Fetching telemetry for 180 days before 2009:151:23:58:53.816
+Getting states between 344649600.0 : 360201300.0
+Setting dataset 1 = 1pdeaat
+Setting dataset 2 = 1pin1at
+Fitting ACIS-I, ACIS-S and time constants at Thu Jun 25 16:48:58 2009
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .Datasets              = 1, 2
+Method                = levmar
+Statistic             = chi2gehrels
+Initial fit statistic = 295915
+Final fit statistic   = 281093 at function evaluation 106
+Data points           = 103678
+Degrees of freedom    = 103664
+Probability [Q-value] = 0
+Reduced statistic     = 2.71158
+Change in statistic   = 14821.2
+   dea.acis150    28.9478     
+   dea.acis50     55.3018     
+   dea.acis90     27.8697     
+   dea.c1         97.3029     
+   dea.c2         12.9987     
+   dea.hrci150    37.7727     
+   dea.hrci50     40.6372     
+   dea.hrci90     27.8044     
+   dea.hrcs150    40.0538     
+   dea.hrcs50     34.0317     
+   dea.hrcs90     30.542      
+   dea.u01        5.40373     
+   dea.u01quad    -0.437677   
+   dea.u12        8.40394     
+Done at Thu Jun 25 16:54:58 2009
+Residuals
+0.709985971451
+0.741981983185
+98.2120108604
+Histogram
+
+            The semantics of histogram has been modified in
+            the current release to fix long-standing issues with
+            outliers handling. The main changes concern
+            1. the definition of the bin edges,
+               now including the rightmost edge, and
+            2. the handling of upper outliers, now ignored rather
+               than tallied in the rightmost bin.
+            The previous behaviour is still accessible using
+            `new=False`, but is scheduled to be deprecated in the
+            next release (1.3).
+
+            *This warning will not printed in the 1.3 release.*
+
+            Use `new=True` to bypass this warning.
+
+            Please read the docstring for more information.
+            
+0.0140149593353
+0.0300018787384
+7.6422059536
+Scatter
+0.0800008773804
+0.10398888588
+9.57220888138
+Scatter2
+0.0840001106262
+0.10798406601
+9.72420501709
+model_par = dict(
+                 acis150 =  28.948,
+                 acis50  =  55.302,
+                 acis90  =  27.870,
+                 c1      =  97.303,
+                 c2      =  12.999,
+                 hrci150 =  37.773,
+                 hrci50  =  40.637,
+                 hrci90  =  27.804,
+                 hrcs150 =  40.054,
+                 hrcs50  =  34.032,
+                 hrcs90  =  30.542,
+                 u01     =   5.404,
+                 u01quad =  -0.438,
+                 u12     =   8.404,
+                )
