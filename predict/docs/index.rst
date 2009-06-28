@@ -113,19 +113,22 @@ Update procedure
   for the ACIS time interval (typically 180 days) instead of the HRC
   interval (typically 360 days).
 
-- Update the model_par definition in characteristics.py.
+- Update the model_par definition from screen output or ``psmc_calibrate.log`` 
+  and update ``VERSION`` in characteristics.py.
 
 - Update ``VERSION`` in ``Makefile``.
 
 - Test the new characteristics file by running::
 
-    /proj/sot/ska/bin/psmc_check --oflsdir <recent_ofls_dir> --outdir out_release
-    ./psmc_check.py --oflsdir <recent_ofls_dir> --outdir out_pre
+    /proj/sot/ska/bin/psmc_check --oflsdir <latest_ofls_dir> --outdir out_release
+    ./psmc_check.py --oflsdir <latest_ofls_dir> --outdir out_pre
+    ./scs107_settling.py
 
   Ensure that results are sensible and that the ``VERSION`` matches expectation.
 
-- Commit the changes::
+- Examine diffs then commit the changes::
 
+    svn diff --diff-cmd tkdiff
     svn commit -m "Update model calibration with data through <stopdate>: version <VERSION>"
 
 - Obtain review approval at the load review, install new files, and test::
@@ -133,7 +136,7 @@ Update procedure
     make docs
     make dist
     make install
-    /proj/sot/ska/bin/psmc_check --oflsdir <recent_ofls_dir> --outdir out_post
+    /proj/sot/ska/bin/psmc_check --oflsdir <latest_ofls_dir> --outdir out_post
 
   Make sure that ``out_post`` and ``out_pre`` results are identical.
 
