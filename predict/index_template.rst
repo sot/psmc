@@ -79,6 +79,8 @@ MSID quantiles
 {% for plot in plots_validation %}
 {{ plot.msid }}
 -----------------------
+Red = telemetry, blue = model
+
 .. image:: {{plot.lines}}
 .. image:: {{plot.histlog}}
 .. image:: {{plot.histlin}}
