@@ -182,7 +182,7 @@ def print_model_par():
 
 def save_fit_figures(root, dat1, statevals):
     set_preferences('export.clobber=1')
-    # set_preferences('window.display=false')
+    set_preferences('window.display=false')
     print 'Residuals'
     t0 = time.time()
     add_window(8, 4, 'inches')
@@ -195,7 +195,7 @@ def save_fit_figures(root, dat1, statevals):
     set_plot_title('Fit and residuals (data - model)')
     print time.time()-t0
 
-    #print_window(root + 'fit_resid', ['format', 'png'])
+    print_window(root + 'fit_resid', ['format', 'png'])
     print time.time()-t0
 
     mp = get_model_plot()
@@ -211,7 +211,7 @@ def save_fit_figures(root, dat1, statevals):
     set_plot_title('Fit residual distribution (degC)')
     print time.time()-t0
 
-    #print_window(root + 'fit_resid_hist', ['format', 'png'])
+    print_window(root + 'fit_resid_hist', ['format', 'png'])
     print time.time()-t0
 
     add_window(5.5,4,'inches')
@@ -224,7 +224,7 @@ def save_fit_figures(root, dat1, statevals):
     set_plot_ylabel('Residual (data-model) (degC)')
     set_plot_title('Fit residual vs. temperature')
     t1 = time.time(); print t1-t0
-    # print_window(root + 'fit_resid_vs_temp', ['format', 'png'])
+    print_window(root + 'fit_resid_vs_temp', ['format', 'png'])
     t1 = time.time(); print t1-t0
 
     add_window(5.5,4,'inches')
@@ -238,7 +238,7 @@ def save_fit_figures(root, dat1, statevals):
     set_plot_ylabel('Pitch (degrees)')
     set_plot_title('Data coverage (each dot = 32 sec)')
     t1 = time.time(); print t1-t0
-    # print_window(root + 'fit_pitch_simpos', ['format', 'png'])
+    print_window(root + 'fit_pitch_simpos', ['format', 'png'])
     t1 = time.time(); print t1-t0
 
 def fitall():
@@ -307,6 +307,14 @@ def get_options():
     parser.add_option('--figroot',
                       default='',
                       help="Figure root name")
+    parser.add_option('--fit',
+                      action='store_true',
+                      default=True,
+                      help="Do fitting")
+    parser.add_option('--no-fit',
+                      action='store_false',
+                      dest='fit',
+                      help="Do not do fitting")
     return parser.parse_args()
         
 def main():
@@ -322,7 +330,8 @@ def main():
             thaw(getattr(dea, detector + pitch))
 
     print 'Fitting HRC-S and HRC-I settling temps at', time.ctime()
-    #fit(1,2)
+    if opt.fit:
+        fit(1,2)
     freeze(dea)
     print 'Done at', time.ctime()
 
@@ -342,7 +351,8 @@ def main():
     thaw(dea.c2)
 
     print 'Fitting ACIS-I, ACIS-S and time constants at', time.ctime()
-    #fit(1,2)
+    if opt.fit:
+        fit(1,2)
     freeze(dea)
     print 'Done at', time.ctime()
 
