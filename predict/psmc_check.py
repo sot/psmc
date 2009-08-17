@@ -44,6 +44,7 @@ YELLOW = dict(dea=characteristics.T_dea_yellow, pin=characteristics.T_pin_yellow
 MARGIN = dict(dea=characteristics.T_dea_margin, pin=characteristics.T_pin_margin)
 
 TASK_DATA = os.path.join(os.environ['SKA'], 'data', 'psmc')
+db = Ska.DBI.DBI(dbi='sybase', server='sybase', user='aca_read', database='aca')
 
 def get_options():
     from optparse import OptionParser
@@ -53,8 +54,7 @@ def get_options():
                       default="out",
                       help="Output directory")
     parser.add_option("--oflsdir",
-                      default="/data/mpcrit1/mplogs/2008/NOV2408/oflsc",
-                      help="Load products OFLS directory")
+                       help="Load products OFLS directory")
     parser.add_option("--power",
                       type='float',
                       help="Starting PSMC power (watts)")
@@ -89,49 +89,7 @@ def get_options():
     opt, args = parser.parse_args()
     return opt, args
 
-def main(opt):
-    if not os.path.exists(opt.outdir):
-        os.mkdir(opt.outdir)
-
-    config_logging(opt.outdir, opt.verbose)
-
-    # Store info relevant to processing for use in outputs
-    proc = dict(run_user=os.environ['USER'],
-                run_time=time.ctime(),
-                errors=[],
-                dea_limit=YELLOW['dea'] - MARGIN['dea'],
-                pin_limit=YELLOW['pin'] - MARGIN['pin'],
-                )
-    versionfile = os.path.join(os.path.dirname(__file__), 'VERSION')
-    logging.info('#####################################################################')
-    logging.info('# psmc_check.py run at %s by %s' % (proc['run_time'], proc['run_user']))
-    logging.info('# psmc_check version = ' + open(versionfile).read().strip())
-    logging.info('# characteristics version = ' + characteristics.VERSION)
-    logging.info('#####################################################################\n')
-
-    logging.info('Command line options:\n%s\n' % pformat(opt.__dict__))
-
-    # Connect to database (NEED TO USE aca_read)
-    logging.info('Connecting to database to get cmd_states')
-    db = Ska.DBI.DBI(dbi='sybase', server='sybase', user='aca_read', database='aca')
-
-    # Get tstart, tstop, commands from backstop file in opt.oflsdir
-    bs_cmds = get_bs_cmds(opt.oflsdir)
-    tstart = bs_cmds[0]['time']
-    tstop = bs_cmds[-1]['time']
-        
-    proc.update(dict(datestart=DateTime(tstart).date,
-                     datestop=DateTime(tstop).date))
-
-    # Get temperature telemetry for 3 weeks prior to min(tstart, NOW)
-    tnow = DateTime(time.time(), format='unix').secs
-    tlm = get_telem_values(min(tstart, tnow),
-                           ['1pdeaat', '1pin1at',
-                            'tscpos', 'aosares1',
-                            '1de28avo', '1deicacu',
-                            '1dp28avo', '1dpicacu',
-                            '1dp28bvo', '1dpicbcu'],
-                           days=opt.days)
+def make_week_predict( opt, tstart, tstop, bs_cmds, tlm ):
 
     # Try to make initial state0 from cmd line options
     state0 = dict((x, getattr(opt, x)) for x in ('pitch', 'simpos',
@@ -185,21 +143,106 @@ def main(opt):
     viols = make_viols(opt, states, times, temps)
     write_states(opt, states)
     write_temps(opt, times, temps)
+    return dict(opt=opt, states=states, times=times, temps=temps,
+               plots=plots, viols=viols)
+
+def make_validation_viols( plots_validation ):
+    """
+    Find limit violations where predicted temperature is above the
+    yellow limit minus margin.
+    """
+
+    logging.info('Checking for validation violations')
+
+    quant = characteristics.validation_quantile
+    limits = characteristics.validation_limits
+
+    viols = []
+    for plot in plots_validation:
+        if abs(float(plot[quant])) > limits[plot['msid']]:
+            viol = { 'msid': plot['msid'],
+                     'value' : float(plot[quant]),
+                     'limit' : limits[plot['msid']],
+                     'quant' : quant,
+                     }
+            viols.append(viol)
+            logging.info('WARNING: %s value for %s of %s exceeds expected limit of %.2f' %
+                        (plot[quant], quant, plot['msid'], limits[plot['msid']]))
+    return viols
+
+
+def main(opt):
+    if not os.path.exists(opt.outdir):
+        os.mkdir(opt.outdir)
+
+    config_logging(opt.outdir, opt.verbose)
+
+    # Store info relevant to processing for use in outputs
+    proc = dict(run_user=os.environ['USER'],
+                run_time=time.ctime(),
+                errors=[],
+                dea_limit=YELLOW['dea'] - MARGIN['dea'],
+                pin_limit=YELLOW['pin'] - MARGIN['pin'],
+                )
+    versionfile = os.path.join(os.path.dirname(__file__), 'VERSION')
+    logging.info('#####################################################################')
+    logging.info('# psmc_check.py run at %s by %s' % (proc['run_time'], proc['run_user']))
+    logging.info('# psmc_check version = ' + open(versionfile).read().strip())
+    logging.info('# characteristics version = ' + characteristics.VERSION)
+    logging.info('#####################################################################\n')
+
+    logging.info('Command line options:\n%s\n' % pformat(opt.__dict__))
+
+    # Connect to database (NEED TO USE aca_read)
+    logging.info('Connecting to database to get cmd_states')
+
+    tnow = DateTime(time.time(), format='unix').secs
+    if opt.oflsdir is not None:
+        # Get tstart, tstop, commands from backstop file in opt.oflsdir
+        bs_cmds = get_bs_cmds(opt.oflsdir)
+        tstart = bs_cmds[0]['time']
+        tstop = bs_cmds[-1]['time']
+        
+        proc.update(dict(datestart=DateTime(tstart).date,
+                         datestop=DateTime(tstop).date))
+    else:
+        tstart = tnow
+
+    # Get temperature telemetry for 3 weeks prior to min(tstart, NOW)
+    tlm = get_telem_values(min(tstart, tnow),
+                           ['1pdeaat', '1pin1at',
+                            'tscpos', 'aosares1',
+                            '1de28avo', '1deicacu',
+                            '1dp28avo', '1dpicacu',
+                            '1dp28bvo', '1dpicbcu'],
+                           days=opt.days)
+
+  
+    # make predictions on oflsdir if defined
+    if opt.oflsdir is not None:
+        pred = make_week_predict( opt, tstart, tstop, bs_cmds, tlm)
+    else:
+        pred = dict(plots=None,viols=None,times=None,states=None,temps=None)
 
     # Validation
     plots_validation = make_validation_plots(opt.outdir, tlm, db)
+    valid_viols = make_validation_viols( plots_validation )
 
-    write_index_rst(opt, plots, viols, proc, plots_validation)
+    write_index_rst(opt, proc, plots_validation, valid_viols=valid_viols, 
+                    plots=pred['plots'], viols=pred['viols'])
     rst_to_html(opt, proc)
+    
+    return dict(opt=opt, states=pred['states'], times=pred['times'],
+                temps=pred['temps'], plots=pred['plots'],
+                viols=pred['viols'], proc=proc, 
+                plots_validation=plots_validation)
 
-    return dict(opt=opt, statees=states, times=times, temps=temps,
-                plots=plots, viols=viols, proc=proc)
 
 def get_bs_cmds(oflsdir):
     """Return commands for the backstop file in opt.oflsdir.
     """
     import Ska.ParseCM
-    backstop_file = globfile(os.path.join(opt.oflsdir, 'CR*.backstop'))
+    backstop_file = globfile(os.path.join(oflsdir, 'CR*.backstop'))
     logging.info('Using backstop file %s' % backstop_file)
     bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
     logging.info('Found %d backstop commands between %s and %s' %
@@ -311,7 +354,7 @@ def write_temps(opt, times, temps):
     Ska.Numpy.pprint(temp_array, fmt, out)
     out.close()
 
-def write_index_rst(opt, plots, viols, proc, plots_validation):
+def write_index_rst(opt, proc, plots_validation, valid_viols=None, plots=None, viols=None):
     """
     Make output text (in ReST format) in opt.outdir.
     """
@@ -328,10 +371,16 @@ def write_index_rst(opt, plots, viols, proc, plots_validation):
     django_context = django.template.Context({'opt': opt,
                                               'plots': plots,
                                               'viols': viols,
+                                              'valid_viols': valid_viols,
                                               'proc': proc,
                                               'plots_validation': plots_validation,
                                               })
-    index_template = open(os.path.join(TASK_DATA, 'index_template.rst')).read()
+    if opt.oflsdir is None:
+        index_template = open(os.path.join(TASK_DATA, 
+                                           'index_template_val_only.rst')).read()
+    else:
+        index_template = open(os.path.join(TASK_DATA, 
+                                           'index_template.rst')).read()
     index_template = re.sub(r' %}\n', ' %}', index_template)
     template = django.template.Template(index_template)
     open(outfile, 'w').write(template.render(django_context))
@@ -551,7 +600,7 @@ def make_validation_plots(outdir, tlm, db):
         ax.set_title(msid.upper() + ' validation')
         ax.set_ylabel(labels[msid])
         filename = msid + '_valid.png'
-        outfile = os.path.join(opt.outdir, filename)
+        outfile = os.path.join(outdir, filename)
         logging.info('Writing plot file %s' % outfile)
         fig.savefig(outfile)
         plot['lines'] = filename
@@ -570,7 +619,7 @@ def make_validation_plots(outdir, tlm, db):
             ax.set_xlabel(labels[msid])
             fig.subplots_adjust(bottom=0.18)
             filename = '%s_valid_hist_%s.png' % (msid, histscale)
-            outfile = os.path.join(opt.outdir, filename)
+            outfile = os.path.join(outdir, filename)
             logging.info('Writing plot file %s' % outfile)
             fig.savefig(outfile)
             plot['hist' + histscale] = filename

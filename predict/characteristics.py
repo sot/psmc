@@ -1,4 +1,4 @@
-VERSION = '0.02'
+VERSION = '0.03'
 
 # PSMC average power for each state (fep_count, vid_board, clocking)
 # [fep_count, vid_board, clocking, power_avg]
@@ -52,3 +52,12 @@ model_par = dict(acis150 =  28.948,
                  u01quad =  -0.438,
                  u12     =   8.404,
                 )
+
+# validation limits
+validation_quantile = 'quant99'
+validation_limits = { '1PDEAAT'  : 5.5,
+                      '1PIN1AT'  : 3.5,
+                      'AOSARES1' : 1,
+                      'POWER'    : 8,
+                      'TSCPOS'   : 2,
+                      }     

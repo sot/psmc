@@ -1,7 +1,7 @@
 # Set the task name
 TASK = psmc
 # Version
-VER = 0.02
+VER = 0.03
 
 
 # Uncomment the correct choice indicating either SKA or TST flight environment
@@ -9,7 +9,7 @@ FLIGHT_ENV = SKA
 
 BIN = psmc_check
 SHARE = psmc_check.py psmc_calibrate.py twodof.py characteristics.py VERSION
-DATA = index_template.rst psmc_check.css fit_resid.png fit_resid_hist.png \
+DATA = index_template.rst index_template_val_only.rst psmc_check.css fit_resid.png fit_resid_hist.png \
        fit_resid_vs_temp.png fit_pitch_simpos.png psmc_calibrate.log VERSION
 DOC = docs/_build/html
 
@@ -33,7 +33,7 @@ version:
 	rm -f VER
 	echo "$(VER)" > VERSION
 
-install:
+install: docs
 #  Uncomment the lines which apply for this task
 	mkdir -p $(INSTALL_BIN)
 	mkdir -p $(INSTALL_SHARE)
