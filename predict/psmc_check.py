@@ -89,6 +89,73 @@ def get_options():
     opt, args = parser.parse_args()
     return opt, args
 
+def main(opt):
+    if not os.path.exists(opt.outdir):
+        os.mkdir(opt.outdir)
+
+    config_logging(opt.outdir, opt.verbose)
+
+    # Store info relevant to processing for use in outputs
+    proc = dict(run_user=os.environ['USER'],
+                run_time=time.ctime(),
+                errors=[],
+                dea_limit=YELLOW['dea'] - MARGIN['dea'],
+                pin_limit=YELLOW['pin'] - MARGIN['pin'],
+                )
+    versionfile = os.path.join(os.path.dirname(__file__), 'VERSION')
+    logging.info('#####################################################################')
+    logging.info('# psmc_check.py run at %s by %s' % (proc['run_time'], proc['run_user']))
+    logging.info('# psmc_check version = ' + open(versionfile).read().strip())
+    logging.info('# characteristics version = ' + characteristics.VERSION)
+    logging.info('#####################################################################\n')
+
+    logging.info('Command line options:\n%s\n' % pformat(opt.__dict__))
+
+    # Connect to database (NEED TO USE aca_read)
+    logging.info('Connecting to database to get cmd_states')
+
+    tnow = DateTime(time.time(), format='unix').secs
+    if opt.oflsdir is not None:
+        # Get tstart, tstop, commands from backstop file in opt.oflsdir
+        bs_cmds = get_bs_cmds(opt.oflsdir)
+        tstart = bs_cmds[0]['time']
+        tstop = bs_cmds[-1]['time']
+        
+        proc.update(dict(datestart=DateTime(tstart).date,
+                         datestop=DateTime(tstop).date))
+    else:
+        tstart = tnow
+
+    # Get temperature telemetry for 3 weeks prior to min(tstart, NOW)
+    tlm = get_telem_values(min(tstart, tnow),
+                           ['1pdeaat', '1pin1at',
+                            'tscpos', 'aosares1',
+                            '1de28avo', '1deicacu',
+                            '1dp28avo', '1dpicacu',
+                            '1dp28bvo', '1dpicbcu'],
+                           days=opt.days)
+
+  
+    # make predictions on oflsdir if defined
+    if opt.oflsdir is not None:
+        pred = make_week_predict( opt, tstart, tstop, bs_cmds, tlm)
+    else:
+        pred = dict(plots=None, viols=None, times=None, states=None, temps=None)
+
+    # Validation
+    plots_validation = make_validation_plots(opt.outdir, tlm, db)
+    valid_viols = make_validation_viols(plots_validation)
+
+    write_index_rst(opt, proc, plots_validation, valid_viols=valid_viols, 
+                    plots=pred['plots'], viols=pred['viols'])
+    rst_to_html(opt, proc)
+    
+    return dict(opt=opt, states=pred['states'], times=pred['times'],
+                temps=pred['temps'], plots=pred['plots'],
+                viols=pred['viols'], proc=proc, 
+                plots_validation=plots_validation)
+
+
 def make_week_predict( opt, tstart, tstop, bs_cmds, tlm ):
 
     # Try to make initial state0 from cmd line options
@@ -143,6 +210,7 @@ def make_week_predict( opt, tstart, tstop, bs_cmds, tlm ):
     viols = make_viols(opt, states, times, temps)
     write_states(opt, states)
     write_temps(opt, times, temps)
+
     return dict(opt=opt, states=states, times=times, temps=temps,
                plots=plots, viols=viols)
 
@@ -169,73 +237,6 @@ def make_validation_viols( plots_validation ):
             logging.info('WARNING: %s value for %s of %s exceeds expected limit of %.2f' %
                         (plot[quant], quant, plot['msid'], limits[plot['msid']]))
     return viols
-
-
-def main(opt):
-    if not os.path.exists(opt.outdir):
-        os.mkdir(opt.outdir)
-
-    config_logging(opt.outdir, opt.verbose)
-
-    # Store info relevant to processing for use in outputs
-    proc = dict(run_user=os.environ['USER'],
-                run_time=time.ctime(),
-                errors=[],
-                dea_limit=YELLOW['dea'] - MARGIN['dea'],
-                pin_limit=YELLOW['pin'] - MARGIN['pin'],
-                )
-    versionfile = os.path.join(os.path.dirname(__file__), 'VERSION')
-    logging.info('#####################################################################')
-    logging.info('# psmc_check.py run at %s by %s' % (proc['run_time'], proc['run_user']))
-    logging.info('# psmc_check version = ' + open(versionfile).read().strip())
-    logging.info('# characteristics version = ' + characteristics.VERSION)
-    logging.info('#####################################################################\n')
-
-    logging.info('Command line options:\n%s\n' % pformat(opt.__dict__))
-
-    # Connect to database (NEED TO USE aca_read)
-    logging.info('Connecting to database to get cmd_states')
-
-    tnow = DateTime(time.time(), format='unix').secs
-    if opt.oflsdir is not None:
-        # Get tstart, tstop, commands from backstop file in opt.oflsdir
-        bs_cmds = get_bs_cmds(opt.oflsdir)
-        tstart = bs_cmds[0]['time']
-        tstop = bs_cmds[-1]['time']
-        
-        proc.update(dict(datestart=DateTime(tstart).date,
-                         datestop=DateTime(tstop).date))
-    else:
-        tstart = tnow
-
-    # Get temperature telemetry for 3 weeks prior to min(tstart, NOW)
-    tlm = get_telem_values(min(tstart, tnow),
-                           ['1pdeaat', '1pin1at',
-                            'tscpos', 'aosares1',
-                            '1de28avo', '1deicacu',
-                            '1dp28avo', '1dpicacu',
-                            '1dp28bvo', '1dpicbcu'],
-                           days=opt.days)
-
-  
-    # make predictions on oflsdir if defined
-    if opt.oflsdir is not None:
-        pred = make_week_predict( opt, tstart, tstop, bs_cmds, tlm)
-    else:
-        pred = dict(plots=None,viols=None,times=None,states=None,temps=None)
-
-    # Validation
-    plots_validation = make_validation_plots(opt.outdir, tlm, db)
-    valid_viols = make_validation_viols( plots_validation )
-
-    write_index_rst(opt, proc, plots_validation, valid_viols=valid_viols, 
-                    plots=pred['plots'], viols=pred['viols'])
-    rst_to_html(opt, proc)
-    
-    return dict(opt=opt, states=pred['states'], times=pred['times'],
-                temps=pred['temps'], plots=pred['plots'],
-                viols=pred['viols'], proc=proc, 
-                plots_validation=plots_validation)
 
 
 def get_bs_cmds(oflsdir):
@@ -375,12 +376,8 @@ def write_index_rst(opt, proc, plots_validation, valid_viols=None, plots=None, v
                                               'proc': proc,
                                               'plots_validation': plots_validation,
                                               })
-    if opt.oflsdir is None:
-        index_template = open(os.path.join(TASK_DATA, 
-                                           'index_template_val_only.rst')).read()
-    else:
-        index_template = open(os.path.join(TASK_DATA, 
-                                           'index_template.rst')).read()
+    index_template_file = 'index_template.rst' if opt.oflsdir else 'index_template_val_only.rst'
+    index_template = open(os.path.join(TASK_DATA, index_template_file)).read()
     index_template = re.sub(r' %}\n', ' %}', index_template)
     template = django.template.Template(index_template)
     open(outfile, 'w').write(template.render(django_context))
