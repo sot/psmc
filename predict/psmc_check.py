@@ -78,6 +78,9 @@ def get_options():
                       type='float',
                       default=21.0,
                       help="Days of validation data (days)")
+    parser.add_option("--run_start_time",
+                      default= DateTime(time.time(), format='unix').date,
+                      help="Reference time to replace run start time for regression testing")
     parser.add_option("--traceback",
                       default=True,
                       help='Enable tracebacks')
@@ -113,8 +116,8 @@ def main(opt):
 
     # Connect to database (NEED TO USE aca_read)
     logging.info('Connecting to database to get cmd_states')
-
-    tnow = DateTime(time.time(), format='unix').secs
+    
+    tnow = DateTime(opt.run_start_time).secs
     if opt.oflsdir is not None:
         # Get tstart, tstop, commands from backstop file in opt.oflsdir
         bs_cmds = get_bs_cmds(opt.oflsdir)
@@ -586,7 +589,14 @@ def make_validation_plots(outdir, tlm, db):
             'tscpos': '%d'}
 
     plots = []
-    logging.info('Making PSMC model validation plots')
+    logging.info('Making PSMC model validation plots and quantile table')
+    quantiles = (1, 5, 16, 50, 84, 95, 99)
+    # store lines of quantile table in a string and write out later
+    quant_table = ''
+    quant_head = "MSID"
+    for quant in quantiles:
+        quant_head += ",quant%d" % quant
+    quant_table += quant_head + "\n"
     for fig_id, msid in enumerate(sorted(pred)):
         plot = dict(msid=msid.upper())
         fig = plt.figure(10+fig_id, figsize=(7,3.5))
@@ -604,9 +614,12 @@ def make_validation_plots(outdir, tlm, db):
 
         # Make quantiles
         diff = np.sort(tlm[msid] - pred[msid])
-        for quant in (1, 5, 16, 50, 84, 95, 99):
-            plot['quant%02d' % quant] = fmts[msid] % diff[(len(diff) * quant) // 100]
-
+        quant_line = "%s" % msid
+        for quant in quantiles:
+            quant_val = diff[(len(diff) * quant) // 100]
+            plot['quant%02d' % quant] = fmts[msid] % quant_val
+            quant_line += (',' + fmts[msid] % quant_val)
+        quant_table += quant_line + "\n"
         for histscale in ('log', 'lin'):
             fig = plt.figure(20+fig_id, figsize=(4,3))
             fig.clf()
@@ -622,6 +635,12 @@ def make_validation_plots(outdir, tlm, db):
             plot['hist' + histscale] = filename
 
         plots.append(plot)
+
+    quant_filename = os.path.join(outdir, 'validation_quant.csv')
+    quant_file = open(quant_filename, 'w')
+    logging.info('Writing quantile table %s' % quant_filename)
+    quant_file.write(quant_table)
+    quant_file.close()
 
     return plots
 
