@@ -57,7 +57,7 @@ model_par = dict(acis150 =  28.948,
 validation_quantile = 'quant99'
 validation_limits = { '1PDEAAT'  : 5.5,
                       '1PIN1AT'  : 3.5,
-                      'AOSARES1' : 1,
+                      'AOSARES1' : 2,
                       'POWER'    : 8,
                       'TSCPOS'   : 2,
                       }     
