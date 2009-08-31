@@ -19,8 +19,6 @@ Load directory        {{opt.loaddir}}
 {% endif %}
 Run time              {{proc.run_time}} by {{proc.run_user}}
 Run log               `<run.dat>`_
-Temperatures          `<temperatures.dat>`_
-States                `<states.dat>`_
 ====================  =============================================
 
 =======================
