@@ -8,9 +8,9 @@ VER = 0.03
 FLIGHT_ENV = SKA
 
 BIN = psmc_check
-SHARE = psmc_check.py psmc_calibrate.py twodof.py characteristics.py VERSION
+SHARE = psmc_check.py psmc_calibrate.py twodof.py characteristics.py VERSION run_psmc_daily.py 
 DATA = index_template.rst index_template_val_only.rst psmc_check.css fit_resid.png fit_resid_hist.png \
-       fit_resid_vs_temp.png fit_pitch_simpos.png psmc_calibrate.log VERSION
+       fit_resid_vs_temp.png fit_pitch_simpos.png psmc_calibrate.log VERSION task_schedule.cfg
 DOC = docs/_build/html
 
 include /proj/sot/ska/include/Makefile.FLIGHT
@@ -33,7 +33,7 @@ version:
 	rm -f VER
 	echo "$(VER)" > VERSION
 
-install: docs
+install: 
 #  Uncomment the lines which apply for this task
 	mkdir -p $(INSTALL_BIN)
 	mkdir -p $(INSTALL_SHARE)
