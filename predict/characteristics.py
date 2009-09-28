@@ -54,10 +54,12 @@ model_par = dict(acis150 =  28.948,
                 )
 
 # validation limits
-validation_quantile = 'quant99'
-validation_limits = { '1PDEAAT'  : 5.5,
-                      '1PIN1AT'  : 3.5,
-                      'AOSARES1' : 2,
-                      'POWER'    : 8,
-                      'TSCPOS'   : 2,
-                      }     
+# 'msid' : (( quantile, absolute max value ))
+validation_limits = { '1PDEAAT' :  ((1,5.5),
+                                   (50,1.0),
+                                   (99, 5.5)),
+                      '1PIN1AT' :  ((1, 3.5),
+                                   (99, 3.5)),
+                      'AOSARES1' : ((1, 2.0),),
+                      'POWER':     ((1, 8.0),),
+                      'TSCPOS' :   ((1, 2.0 ),) }
