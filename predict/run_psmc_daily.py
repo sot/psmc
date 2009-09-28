@@ -44,7 +44,8 @@ def main(opt):
 
     run_time_date = DateTime(opt.run_start_time).date
     run_time_mx = DateTime(opt.run_start_time).mxDateTime
-    day_dir = os.path.join( opt.data_dir, "%s" % run_time_mx.year, "%s" % run_time_mx.day_of_year )
+    daystring = "%03d" % run_time_mx.day_of_year
+    day_dir = os.path.join( opt.data_dir, "%s" % run_time_mx.year, "%s" % daystring )
     if not os.path.exists(day_dir):
         os.makedirs(day_dir)
     print PSMC_CHECK_EXE
