@@ -148,6 +148,8 @@ def main(opt):
     # Validation
     plots_validation = make_validation_plots(opt.outdir, tlm, db)
     valid_viols = make_validation_viols(plots_validation)
+    if len(valid_viols) > 0:
+        logging.info('validation warning(s) in output at %s' % opt.outdir )
 
     write_index_rst(opt, proc, plots_validation, valid_viols=valid_viols, 
                     plots=pred['plots'], viols=pred['viols'])
@@ -217,28 +219,45 @@ def make_week_predict( opt, tstart, tstop, bs_cmds, tlm ):
     return dict(opt=opt, states=states, times=times, temps=temps,
                plots=plots, viols=viols)
 
-def make_validation_viols( plots_validation ):
+
+def make_validation_viols(plots_validation):
     """
-    Find limit violations where predicted temperature is above the
-    yellow limit minus margin.
+    Find limit violations where MSID quantile values are outside the
+    allowed range.
     """
 
     logging.info('Checking for validation violations')
 
-    quant = characteristics.validation_quantile
-    limits = characteristics.validation_limits
-
+    from characteristics import validation_limits
     viols = []
+
     for plot in plots_validation:
-        if abs(float(plot[quant])) > limits[plot['msid']]:
-            viol = { 'msid': plot['msid'],
-                     'value' : float(plot[quant]),
-                     'limit' : limits[plot['msid']],
-                     'quant' : quant,
-                     }
-            viols.append(viol)
-            logging.info('WARNING: %s value for %s of %s exceeds expected limit of %.2f' %
-                        (plot[quant], quant, plot['msid'], limits[plot['msid']]))
+        # 'plot' is actually a structure with plot info and stats about the
+        #  plotted data for a particular MSID.  'msid' can be a real MSID
+        #  (1PDEAAT) or pseudo like 'POWER'
+        msid = plot['msid']
+
+        # Make sure validation limits exist for this MSID
+        if msid not in validation_limits:
+            continue  
+
+        # Cycle through defined quantiles (e.g. 99 for 99%) and corresponding
+        # limit values for this MSID.
+        for quantile, limit in validation_limits[msid]:
+            # Get the quantile statistic as calculated when making plots
+            msid_quantile_value = float(plot['quant%02d' % quantile])
+
+            # Check for a violation and take appropriate action
+            if abs(msid_quantile_value) > limit:
+                viol = { 'msid': msid,
+                         'value' : msid_quantile_value,
+                         'limit' : limit,
+                         'quant' : quantile,
+                         }
+                viols.append(viol)
+                logging.info('WARNING: %s %d%% quantile value of %s exceeds limit of %.2f' %
+                            (msid, quantile, msid_quantile_value, limit))
+
     return viols
 
 
