@@ -77,9 +77,27 @@ psmc_calibrate.py
 ========================
 Calibrate PSMC model coefficients using telemetry from specified time range.
 
+::
+
+  Usage: psmc_calibrate.py [options]
+
+  Options:
+    -h, --help            show this help message and exit
+    --datestop=DATESTOP   Stop date for calibration dataset
+    --ndays-acis=NDAYS_ACIS
+                          Number of days for ACIS
+    --ndays-hrc=NDAYS_HRC
+                          Number of days for HRC
+    --figroot=FIGROOT     Figure root name
+    --fit                 Do fitting
+    --no-fit              Do not do fitting
+
 Current calibration plots
 ---------------------------
 **Fit and residuals (data-model)**
+
+Note: the drop around T=3.67e8 is believed to be due to turning off the FA6 heater 
+near 2009:227.
 
 .. image:: ../fit_resid.png
 
@@ -104,9 +122,11 @@ Update procedure
 - Use the following commands from the shell to generate a new set of PSMC model
   parameters::
 
+    svn checkout file:///proj/sot/ska/svn/psmc/trunk/predict predict
+    cd predict
     ciao
     setenv PYTHONPATH /home/aldcroft/ciaopy/lib/python
-    psmc_calibrate.py --stopdate <stopdate> | tee psmc_calibrate.log
+    python psmc_calibrate.py | tee psmc_calibrate.log
 
 - Compare parameters to existing values.  Watch for outliers and examine
   fit_pitch_simpos.png for coverage.  Note that this plot shows coverage
@@ -114,14 +134,14 @@ Update procedure
   interval (typically 360 days).
 
 - Update the model_par definition from screen output or ``psmc_calibrate.log`` 
-  and update ``VERSION`` in characteristics.py.
+  and update the calibration ``VERSION`` in characteristics.py.
 
-- Update ``VERSION`` in ``Makefile``.
+- Update project ``VERSION`` in ``Makefile``.
 
 - Test the new characteristics file by running::
 
     /proj/sot/ska/bin/psmc_check --oflsdir <latest_ofls_dir> --outdir out_release
-    ./psmc_check.py --oflsdir <latest_ofls_dir> --outdir out_pre
+    python psmc_check.py --oflsdir <latest_ofls_dir> --outdir out_pre
     ./scs107_settling.py
 
   Ensure that results are sensible and that the ``VERSION`` matches expectation.

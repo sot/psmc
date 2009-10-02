@@ -1,4 +1,4 @@
-VERSION = '0.03'
+VERSION = '0.04'
 
 # PSMC average power for each state (fep_count, vid_board, clocking)
 # [fep_count, vid_board, clocking, power_avg]
@@ -37,17 +37,18 @@ T_pin_margin = 4.5
 
 # Based on levmar fit of both 1pdeaat and 1pin1at
 # for 180 days before 2009:151:23:58:53.816
-model_par = dict(acis150 =  28.948,
-                 acis50  =  55.302,
-                 acis90  =  27.870,
+offset = 1.7
+model_par = dict(acis150 =  28.948-offset,
+                 acis50  =  55.302-offset,
+                 acis90  =  27.870-offset,
                  c1      =  97.303,
                  c2      =  12.999,
-                 hrci150 =  37.773,
-                 hrci50  =  40.637,
-                 hrci90  =  27.804,
-                 hrcs150 =  40.054,
-                 hrcs50  =  34.032,
-                 hrcs90  =  30.542,
+                 hrci150 =  37.773-offset,
+                 hrci50  =  40.637-offset,
+                 hrci90  =  27.804-offset,
+                 hrcs150 =  40.054-offset,
+                 hrcs50  =  34.032-offset,
+                 hrcs90  =  30.542-offset,
                  u01     =   5.404,
                  u01quad =  -0.438,
                  u12     =   8.404,
@@ -58,8 +59,8 @@ model_par = dict(acis150 =  28.948,
 validation_limits = { '1PDEAAT' :  ((1,5.5),
                                    (50,1.0),
                                    (99, 5.5)),
-                      '1PIN1AT' :  ((1, 3.5),
-                                   (99, 3.5)),
-                      'AOSARES1' : ((1, 2.0),),
+                      '1PIN1AT' :  ((1, 5.5),
+                                   (99, 5.5)),
+                      'AOSARES1' : ((1, 2.5),),
                       'POWER':     ((1, 8.0),),
                       'TSCPOS' :   ((1, 2.0 ),) }

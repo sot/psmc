@@ -294,7 +294,7 @@ def killall():
 def get_options():
     parser = optparse.OptionParser()
     parser.add_option("--datestop",
-                      default='2009-06-01T00:00:00',
+                      default=None,
                       help="Stop date for calibration dataset")
     parser.add_option("--ndays-acis",
                       type='int',
@@ -320,11 +320,18 @@ def get_options():
 def main():
     opt, args = get_options()
 
+    if opt.datestop is None:
+        opt.datestop = Chandra.Time.DateTime(time.time()-7*86400, format='unix').date
+        print 'Datestop =', opt.datestop
+
     # Fit HRC-I and HRC-S (typically for a longer period such as 365 days)
     model_par = characteristics.model_par
     tlm, states, statevals = get_tlm_states(opt.datestop, opt.ndays_hrc)
     dea, pin, dat1, dat2 = init_models_data(tlm, states, model_par)
-    
+
+    print 'Original model pars:'
+    print_model_par()
+
     for detector in ('hrci', 'hrcs'):
         for pitch in ('50', '90', '150'):
             thaw(getattr(dea, detector + pitch))
