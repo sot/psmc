@@ -1,0 +1,64 @@
+#####################################################################
+# psmc_check.py run at Mon Oct  5 17:39:36 2009 by jeanconn
+# psmc_check version = 0.04
+# characteristics version = 0.04
+#####################################################################
+
+Command line options:
+{'T_dea': None,
+ 'T_pin': None,
+ 'days': 21.0,
+ 'dt': 32.799999999999997,
+ 'oflsdir': 'DEC2908B/',
+ 'outdir': 'dec2908b',
+ 'pitch': None,
+ 'power': None,
+ 'run_start_time': '2009:278:21:39:36.540',
+ 'simpos': None,
+ 'traceback': True,
+ 'verbose': 1}
+
+Connecting to database to get cmd_states
+Using backstop file DEC2908B/CR363_2101.backstop
+Found 2916 backstop commands between 2008:363:21:33:33.441 and 2009:012:01:07:07.280
+Fetching telemetry between 2008:342:21:33:33.441 and 2008:363:21:33:33.441
+get_cmds: got 0 commands from /data/mpcrit1/mplogs/2009/APR2009/oflsc/CR110_0104.backstop
+get_cmds: got 51 commands from /data/mpcrit1/mplogs/2009/OCT0509/oflsa/CR277_0801.backstop
+get_cmds: got 117 commands from /data/mpcrit1/mplogs/2009/OCT0509/oflsa/CR277_0801.backstop
+get_cmds: got 67 commands from /data/mpcrit1/mplogs/2009/OCT0509/oflsa/CR277_0801.backstop
+get_cmds: got 56 commands from /data/mpcrit1/mplogs/2009/OCT0509/oflsa/CR277_0801.backstop
+get_cmds: got 59 commands from /data/mpcrit1/mplogs/2009/OCT0509/oflsa/CR277_0801.backstop
+Got 0 cmds from database between 2008:363:21:36:33.441 and 2008:363:21:33:33.441
+Found 939 commanded states from 2008:363:21:09:33.441 to 2009:012:01:07:07.280
+Calculating PSMC thermal model
+Making temperature check plots
+Writing plot file dec2908b/1pdeaat.png
+Writing plot file dec2908b/1pin1at.png
+Writing plot file dec2908b/pow_sim.png
+Checking for limit violations
+Writing states to dec2908b/states.dat
+Writing temperatures to dec2908b/temperatures.dat
+Getting commanded states between 2008:342:21:33:33.441 - 2008:363:21:33:31.042
+Found 1102 commanded states
+Calculating PSMC thermal model for validation
+Making PSMC model validation plots and quantile table
+Writing plot file dec2908b/1pdeaat_valid.png
+Writing plot file dec2908b/1pdeaat_valid_hist_log.png
+Writing plot file dec2908b/1pdeaat_valid_hist_lin.png
+Writing plot file dec2908b/1pin1at_valid.png
+Writing plot file dec2908b/1pin1at_valid_hist_log.png
+Writing plot file dec2908b/1pin1at_valid_hist_lin.png
+Writing plot file dec2908b/aosares1_valid.png
+Writing plot file dec2908b/aosares1_valid_hist_log.png
+Writing plot file dec2908b/aosares1_valid_hist_lin.png
+Writing plot file dec2908b/power_valid.png
+Writing plot file dec2908b/power_valid_hist_log.png
+Writing plot file dec2908b/power_valid_hist_lin.png
+Writing plot file dec2908b/tscpos_valid.png
+Writing plot file dec2908b/tscpos_valid_hist_log.png
+Writing plot file dec2908b/tscpos_valid_hist_lin.png
+Writing quantile table dec2908b/validation_quant.csv
+Checking for validation violations
+WARNING: 1PDEAAT 50% quantile value of 1.63 exceeds limit of 1.00
+validation warning(s) in output at dec2908b
+Writing report file dec2908b/index.rst
