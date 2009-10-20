@@ -45,6 +45,7 @@ MARGIN = dict(dea=characteristics.T_dea_margin, pin=characteristics.T_pin_margin
 
 TASK_DATA = os.path.join(os.environ['SKA'], 'data', 'psmc')
 db = Ska.DBI.DBI(dbi='sybase', server='sybase', user='aca_read', database='aca')
+logger = logging.getLogger('psmc_check')
 
 def get_options():
     from optparse import OptionParser
@@ -84,6 +85,9 @@ def get_options():
     parser.add_option("--traceback",
                       default=True,
                       help='Enable tracebacks')
+    parser.add_option("--old-cmds",
+                      action='store_true',
+                      help='Use old (version < 0.06) method to determine commands')
     parser.add_option("--verbose",
                       type='int',
                       default=1,
@@ -106,16 +110,16 @@ def main(opt):
                 pin_limit=YELLOW['pin'] - MARGIN['pin'],
                 )
     versionfile = os.path.join(os.path.dirname(__file__), 'VERSION')
-    logging.info('#####################################################################')
-    logging.info('# psmc_check.py run at %s by %s' % (proc['run_time'], proc['run_user']))
-    logging.info('# psmc_check version = ' + open(versionfile).read().strip())
-    logging.info('# characteristics version = ' + characteristics.VERSION)
-    logging.info('#####################################################################\n')
+    logger.info('#####################################################################')
+    logger.info('# psmc_check.py run at %s by %s' % (proc['run_time'], proc['run_user']))
+    logger.info('# psmc_check version = ' + open(versionfile).read().strip())
+    logger.info('# characteristics version = ' + characteristics.VERSION)
+    logger.info('#####################################################################\n')
 
-    logging.info('Command line options:\n%s\n' % pformat(opt.__dict__))
+    logger.info('Command line options:\n%s\n' % pformat(opt.__dict__))
 
     # Connect to database (NEED TO USE aca_read)
-    logging.info('Connecting to database to get cmd_states')
+    logger.info('Connecting to database to get cmd_states')
     
     tnow = DateTime(opt.run_start_time).secs
     if opt.oflsdir is not None:
@@ -137,7 +141,6 @@ def main(opt):
                             '1dp28avo', '1dpicacu',
                             '1dp28bvo', '1dpicbcu'],
                            days=opt.days)
-
   
     # make predictions on oflsdir if defined
     if opt.oflsdir is not None:
@@ -149,7 +152,7 @@ def main(opt):
     plots_validation = make_validation_plots(opt.outdir, tlm, db)
     valid_viols = make_validation_viols(plots_validation)
     if len(valid_viols) > 0:
-        logging.info('validation warning(s) in output at %s' % opt.outdir )
+        logger.info('validation warning(s) in output at %s' % opt.outdir )
 
     write_index_rst(opt, proc, plots_validation, valid_viols=valid_viols, 
                     plots=pred['plots'], viols=pred['viols'])
@@ -180,21 +183,41 @@ def make_week_predict( opt, tstart, tstop, bs_cmds, tlm ):
         state0.update({'T_dea': np.mean(tlm['1pdeaat'][ok]),
                        'T_pin': np.mean(tlm['1pin1at'][ok])})
 
-    logging.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
+    logger.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
                                            pformat(state0)))
 
-    # Get the commands after end of state0 through first backstop command time
-    cmds_datestart = DateTime(state0['tstop']).date
-    cmds_datestop = DateTime(bs_cmds[0]['time']).date
-    db_cmds = cmd_states.get_cmds(cmds_datestart, cmds_datestop, db)
-    logging.info('Got %d cmds from database between %s and %s' %
+    if opt.old_cmds:
+        cmds_datestart = DateTime(state0['tstop']).date
+        cmds_datestop = DateTime(bs_cmds[0]['time']).date
+        db_cmds = cmd_states.get_cmds(cmds_datestart, cmds_datestop, db)
+    else:
+        # Get the commands after end of state0 through first backstop command time
+        cmds_datestart = state0['datestop']
+        cmds_datestop = bs_cmds[0]['date']    # *was* DateTime(bs_cmds[0]['time']).date
+
+        # Get timeline load segments including state0 and beyond.
+        timeline_loads = db.fetchall("""SELECT * from timeline_loads
+                                        WHERE datestop > '%s' and datestart < '%s'"""
+                                     % (cmds_datestart, cmds_datestop))
+        logger.info('Found %s timeline_loads  after %s' % (len(timeline_loads), cmds_datestart))
+
+        # Get cmds since datestart within timeline_loads
+        db_cmds = cmd_states.get_cmds(cmds_datestart, db=db, update_db=False,
+                                      timeline_loads=timeline_loads)
+
+        # Delete non-load cmds that are within the backstop time span
+        # => Keep if timeline_id is not None or date < bs_cmds[0]['time']
+        db_cmds = [x for x in db_cmds if (x['timeline_id'] is not None or
+                                          x['time'] < bs_cmds[0]['time'])]
+
+    logger.info('Got %d cmds from database between %s and %s' %
                   (len(db_cmds), cmds_datestart, cmds_datestop))
 
     # Get the commanded states from state0 through the end of the backstop commands
     states = cmd_states.get_states(state0, db_cmds + bs_cmds)
     states[-1].datestop = bs_cmds[-1]['date']
     states[-1].tstop = bs_cmds[-1]['time']
-    logging.info('Found %d commanded states from %s to %s' %
+    logger.info('Found %d commanded states from %s to %s' %
                  (len(states), states[0]['datestart'], states[-1]['datestop']))
 
     # Add power column based on ACIS commanding in states
@@ -202,7 +225,7 @@ def make_week_predict( opt, tstart, tstop, bs_cmds, tlm ):
 
     # Create array of times at which to calculate PSMC temperatures, then do it.
     times = np.arange(state0['tstart'], tstop, opt.dt)
-    logging.info('Calculating PSMC thermal model')
+    logger.info('Calculating PSMC thermal model')
     T_pin, T_dea = twodof.calc_twodof_model(states, state0['T_pin'], state0['T_dea'], times,
                                             characteristics.model_par)
 
@@ -226,7 +249,7 @@ def make_validation_viols(plots_validation):
     allowed range.
     """
 
-    logging.info('Checking for validation violations')
+    logger.info('Checking for validation violations')
 
     from characteristics import validation_limits
     viols = []
@@ -255,7 +278,7 @@ def make_validation_viols(plots_validation):
                          'quant' : quantile,
                          }
                 viols.append(viol)
-                logging.info('WARNING: %s %d%% quantile value of %s exceeds limit of %.2f' %
+                logger.info('WARNING: %s %d%% quantile value of %s exceeds limit of %.2f' %
                             (msid, quantile, msid_quantile_value, limit))
 
     return viols
@@ -266,9 +289,9 @@ def get_bs_cmds(oflsdir):
     """
     import Ska.ParseCM
     backstop_file = globfile(os.path.join(oflsdir, 'CR*.backstop'))
-    logging.info('Using backstop file %s' % backstop_file)
+    logger.info('Using backstop file %s' % backstop_file)
     bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
-    logging.info('Found %d backstop commands between %s and %s' %
+    logger.info('Found %d backstop commands between %s and %s' %
                   (len(bs_cmds), bs_cmds[0]['date'], bs_cmds[-1]['date']))
 
     return bs_cmds
@@ -286,7 +309,7 @@ def get_telem_values(tstart, colspecs, days=14, dt=32.8):
     tstart = DateTime(tstart).secs
     start = DateTime(tstart - days * 86400).date
     stop = DateTime(tstart).date
-    logging.info('Fetching telemetry between %s and %s' % (start, stop))
+    logger.info('Fetching telemetry between %s and %s' % (start, stop))
     colnames, vals = Ska.TelemArchive.fetch.fetch(start=start,
                                                   stop=stop,
                                                   dt=dt,
@@ -317,8 +340,8 @@ def rst_to_html(opt, proc):
                         infile, outfile])
     if status != 0:
         proc['errors'].append('rst2html.py failed with status %d: check run log.' % status)
-        logging.error('rst2html.py failed')
-        logging.error(''.join(spawn.outlines) + '\n')
+        logger.error('rst2html.py failed')
+        logger.error(''.join(spawn.outlines) + '\n')
 
     # Remove the stupid <colgroup> field that docbook inserts.  This
     # <colgroup> prevents HTML table auto-sizing.
@@ -327,27 +350,39 @@ def rst_to_html(opt, proc):
     open(outfile, 'w').write(outtext)
 
 def config_logging(outdir, verbose):
-    """Set up file and console logging.
+    """Set up file and console logger.
     See http://docs.python.org/library/logging.html#logging-to-multiple-destinations
     """
+    # Disable auto-configuration of root logger by adding a null handler.
+    # This prevents other modules (e.g. Chandra.cmd_states) from generating
+    # a streamhandler by just calling logging.info(..).
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
+    rootlogger = logging.getLogger()
+    rootlogger.addHandler(NullHandler())
+
     loglevel = { 0: logging.CRITICAL,
                  1: logging.INFO,
                  2: logging.DEBUG }.get(verbose, logging.INFO)
-    logging.basicConfig(level=loglevel,
-                        format='%(message)s',
-                        filename=os.path.join(outdir, 'run.dat'),
-                        filemode='w')
+
+    logger = logging.getLogger('psmc_check')
+    logger.setLevel(loglevel)
+
+    formatter = logging.Formatter('%(message)s')
 
     console = logging.StreamHandler()
-    console.setLevel(loglevel)
-    formatter = logging.Formatter('%(message)s')
     console.setFormatter(formatter)
-    logging.getLogger('').addHandler(console)
+    logger.addHandler(console)
+
+    filehandler = logging.FileHandler(filename=os.path.join(outdir, 'run.dat'), mode='w')
+    filehandler.setFormatter(formatter)
+    logger.addHandler(filehandler)
 
 def write_states(opt, states):
     """Write states recarray to file states.dat"""
     outfile = os.path.join(opt.outdir, 'states.dat')
-    logging.info('Writing states to %s' % outfile)
+    logger.info('Writing states to %s' % outfile)
     out = open(outfile, 'w')
     fmt = {'power': '%.1f',
            'pitch': '%.2f',
@@ -364,7 +399,7 @@ def write_states(opt, states):
 def write_temps(opt, times, temps):
     """Write temperature predictions to file temperatures.dat"""
     outfile = os.path.join(opt.outdir, 'temperatures.dat')
-    logging.info('Writing temperatures to %s' % outfile)
+    logger.info('Writing temperatures to %s' % outfile)
     T_dea = temps['dea']
     T_pin = temps['pin']
     temp_recs = [(times[i], DateTime(times[i]).date, T_dea[i], T_pin[i]) for i in xrange(len(times))]
@@ -390,7 +425,7 @@ def write_index_rst(opt, proc, plots_validation, valid_viols=None, plots=None, v
         print msg
 
     outfile = os.path.join(opt.outdir, 'index.rst')
-    logging.info('Writing report file %s' % outfile)
+    logger.info('Writing report file %s' % outfile)
     django_context = django.template.Context({'opt': opt,
                                               'plots': plots,
                                               'viols': viols,
@@ -409,7 +444,7 @@ def make_viols(opt, states, times, temps):
     Find limit violations where predicted temperature is above the
     yellow limit minus margin.
     """
-    logging.info('Checking for limit violations')
+    logger.info('Checking for limit violations')
 
     viols = dict((x, []) for x in MSID)
     for msid in MSID:
@@ -425,7 +460,7 @@ def make_viols(opt, states, times, temps):
                     'datestop': DateTime(times[change[1]-1]).date,
                     'maxtemp': temp[change[0]:change[1]].max()
                     }
-            logging.info('WARNING: %s exceeds planning limit of %.2f degC from %s to %s' %
+            logger.info('WARNING: %s exceeds planning limit of %.2f degC from %s to %s' %
                          (MSID[msid], plan_limit, viol['datestart'], viol['datestop']))
             viols[msid].append(viol)
     return viols
@@ -485,7 +520,7 @@ def make_check_plots(opt, states, times, temps, tstart):
     # Start time of loads being reviewed expressed in units for plotdate()
     load_start = Ska.Matplotlib.cxctime2plotdate([tstart])[0]
 
-    logging.info('Making temperature check plots')
+    logger.info('Making temperature check plots')
     for fig_id, msid in enumerate(('dea', 'pin')):
         plots[msid] = plot_two(fig_id=fig_id+1,
                                x=times,
@@ -503,7 +538,7 @@ def make_check_plots(opt, states, times, temps, tstart):
         plots[msid]['ax'].axvline(load_start, linestyle=':', color='g', linewidth=1.0)
         filename = MSID[msid].lower() + '.png'
         outfile = os.path.join(opt.outdir, filename)
-        logging.info('Writing plot file %s' % outfile)
+        logger.info('Writing plot file %s' % outfile)
         plots[msid]['fig'].savefig(outfile)
         plots[msid]['filename'] = filename
 
@@ -523,7 +558,7 @@ def make_check_plots(opt, states, times, temps, tstart):
     plots['pow_sim']['fig'].subplots_adjust(right=0.85)
     filename = 'pow_sim.png'
     outfile = os.path.join(opt.outdir, filename)
-    logging.info('Writing plot file %s' % outfile)
+    logger.info('Writing plot file %s' % outfile)
     plots['pow_sim']['fig'].savefig(outfile)
     plots['pow_sim']['filename'] = filename
 
@@ -539,16 +574,16 @@ def get_states(datestart, datestop, db):
     """
     datestart = DateTime(datestart).date
     datestop = DateTime(datestop).date
-    logging.info('Getting commanded states between %s - %s'  %
+    logger.info('Getting commanded states between %s - %s'  %
                  (datestart, datestop))
                  
     # Get all states that intersect specified date range
     cmd = """SELECT * FROM cmd_states
              WHERE datestop > '%s' AND datestart < '%s'
              ORDER BY datestart""" % (datestart, datestop)
-    logging.debug('Query command: %s' % cmd)
+    logger.debug('Query command: %s' % cmd)
     states = db.fetchall(cmd)
-    logging.info('Found %d commanded states' % len(states))
+    logger.info('Found %d commanded states' % len(states))
 
     # Add power columns to states and tlm
     states = Ska.Numpy.add_column(states, 'power', get_power(states))
@@ -581,7 +616,7 @@ def make_validation_plots(outdir, tlm, db):
     T_pin0 = np.mean(tlm['1pin1at'][:10])
 
     # Create array of times at which to calculate PSMC temperatures, then do it.
-    logging.info('Calculating PSMC thermal model for validation')
+    logger.info('Calculating PSMC thermal model for validation')
     T_pin, T_dea = twodof.calc_twodof_model(states, T_pin0, T_dea0, tlm.date,
                                             characteristics.model_par)
 
@@ -608,7 +643,7 @@ def make_validation_plots(outdir, tlm, db):
             'tscpos': '%d'}
 
     plots = []
-    logging.info('Making PSMC model validation plots and quantile table')
+    logger.info('Making PSMC model validation plots and quantile table')
     quantiles = (1, 5, 16, 50, 84, 95, 99)
     # store lines of quantile table in a string and write out later
     quant_table = ''
@@ -627,7 +662,7 @@ def make_validation_plots(outdir, tlm, db):
         ax.set_ylabel(labels[msid])
         filename = msid + '_valid.png'
         outfile = os.path.join(outdir, filename)
-        logging.info('Writing plot file %s' % outfile)
+        logger.info('Writing plot file %s' % outfile)
         fig.savefig(outfile)
         plot['lines'] = filename
 
@@ -649,7 +684,7 @@ def make_validation_plots(outdir, tlm, db):
             fig.subplots_adjust(bottom=0.18)
             filename = '%s_valid_hist_%s.png' % (msid, histscale)
             outfile = os.path.join(outdir, filename)
-            logging.info('Writing plot file %s' % outfile)
+            logger.info('Writing plot file %s' % outfile)
             fig.savefig(outfile)
             plot['hist' + histscale] = filename
 
@@ -657,7 +692,7 @@ def make_validation_plots(outdir, tlm, db):
 
     quant_filename = os.path.join(outdir, 'validation_quant.csv')
     quant_file = open(quant_filename, 'w')
-    logging.info('Writing quantile table %s' % quant_filename)
+    logger.info('Writing quantile table %s' % quant_filename)
     quant_file.write(quant_table)
     quant_file.close()
 

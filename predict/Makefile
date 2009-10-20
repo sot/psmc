@@ -1,7 +1,7 @@
 # Set the task name
 TASK = psmc
 # Version
-VER = 0.05
+VER = 0.06
 
 
 # Uncomment the correct choice indicating either SKA or TST flight environment
