@@ -17,7 +17,7 @@ Summary
 Date start            {{proc.datestart}}
 Date stop             {{proc.datestop}}
 1PDEAAT status        {%if viols.dea%}:red:`NOT OK`{% else %}OK{% endif%} (limit = {{proc.dea_limit|floatformat:1}} C)
-1PIN1AT status        {%if viols.dea%}:red:`NOT OK`{% else %}OK{% endif%} (limit = {{proc.pin_limit|floatformat:1}} C)
+1PIN1AT status        {%if viols.pin%}:red:`NOT OK`{% else %}OK{% endif%} (limit = {{proc.pin_limit|floatformat:1}} C)
 {% if opt.loaddir %}
 Load directory        {{opt.loaddir}}
 {% endif %}

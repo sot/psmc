@@ -1,4 +1,4 @@
-VERSION = '0.04'
+VERSION = '0.05'
 
 # PSMC average power for each state (fep_count, vid_board, clocking)
 # [fep_count, vid_board, clocking, power_avg]
@@ -22,7 +22,14 @@ psmc_power = ((0, 0, 0, 15.0),
               (3, 1, 1, 85.4),
               (4, 1, 1, 99.2),
               (5, 1, 1, 113.9),
-              (6, 1, 1, 129.0))
+              (6, 1, 1, 129.0),
+              (0, 0, 1, 40.0),    # These last 7 states only occur
+              (1, 0, 1, 57.0),    # for a short time due to 
+              (2, 0, 1, 72.0),    # missing stop science at end of
+              (3, 0, 1, 85.4),    # previous load.
+              (4, 0, 1, 99.2),
+              (5, 0, 1, 113.9),
+              (6, 0, 1, 129.0))
 
 # ACIS PSMC hardware yellow/red limits
 T_dea_yellow = 57.0                     # 1PDEAAT yellow limit (degC)
