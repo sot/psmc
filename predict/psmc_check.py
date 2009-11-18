@@ -44,6 +44,8 @@ YELLOW = dict(dea=characteristics.T_dea_yellow, pin=characteristics.T_pin_yellow
 MARGIN = dict(dea=characteristics.T_dea_margin, pin=characteristics.T_pin_margin)
 
 TASK_DATA = os.path.join(os.environ['SKA'], 'data', 'psmc')
+URL = "http://cxc.harvard.edu/mta/ASPECT/psmc_daily_check"
+
 db = Ska.DBI.DBI(dbi='sybase', server='sybase', user='aca_read', database='aca')
 logger = logging.getLogger('psmc_check')
 
@@ -152,7 +154,13 @@ def main(opt):
     plots_validation = make_validation_plots(opt.outdir, tlm, db)
     valid_viols = make_validation_viols(plots_validation)
     if len(valid_viols) > 0:
-        logger.info('validation warning(s) in output at %s' % opt.outdir )
+        # generate daily plot url if outdir in expected year/day format 
+        daymatch = re.match('.*(\d{4})/(\d{3})', opt.outdir)
+        if opt.oflsdir is None and daymatch:
+            url = os.path.join( URL, daymatch.group(1), daymatch.group(2))
+            logger.info('validation warning(s) at %s' % url )
+        else:
+            logger.info('validation warning(s) in output at %s' % opt.outdir )
 
     write_index_rst(opt, proc, plots_validation, valid_viols=valid_viols, 
                     plots=pred['plots'], viols=pred['viols'])
