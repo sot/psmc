@@ -1,8 +1,10 @@
 # Set the task name
 TASK = psmc
-# Version
-VER = 0.06
 
+# Versions
+VER_PSMC = `python psmc_check.py --version`
+VER_CAL = `python -m characteristics`
+VER_MINOR = 0
 
 # Uncomment the correct choice indicating either SKA or TST flight environment
 FLIGHT_ENV = SKA
@@ -25,13 +27,12 @@ dist: version
 	tar --create --verbose --gzip --file $(TASK)-$(VER).tar.gz $(TASK)-$(VER)
 	rm -rf $(TASK)-$(VER)
 
+version:
+	echo "$(VER_PSMC).$(VER_CAL).$(VER_MINOR)" > VERSION
+
 docs:
 	cd docs ; \
 	make html
-
-version:
-	rm -f VER
-	echo "$(VER)" > VERSION
 
 install: 
 #  Uncomment the lines which apply for this task

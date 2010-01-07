@@ -1,0 +1,47 @@
+---++ Version 8.6.0
+
+This version is primarily an update to the model calibration coefficients in
+order to reduce the size of underpredictions for forward-sun 1-CCD
+observations.  Along with this is some code cleanup, documentation
+updates, and improvement in the calibration code and procedure.  Version
+control was migrated from subversion to mercurial.
+
+---+++ characteristics.py
+   * Update calibration based on a simplex fit of all parameters (except
+     u01quad) using 1pdeaat and 1pin1at data for 200 days before 2010:001.  This
+     starts just after the FA6 heater turn-off.  
+   * The updated calibration reduces the underpredictions occurring in
+     forward-sun low-power observations.  It also backs out the ad-hoc offset
+     of 1.7 that was applied to account for the FA6 turn-off since now there
+     is enough data to fully re-calibrate all the parameters.
+  
+---+++ psmc_check.py
+   * Remove the explicit time=Now default from run_start_time and use the 
+     DateTime(None) == Now behavior.
+   * When run_start_time is supplied as a cmd line option then write a pickle
+     data file 'validation_data.pkl' with telemetry and predictions.
+
+---+++ psmc_calibrate.py
+   * Update to use standalone sherpa 4.2 + matplotlib.
+   * Add command line option to specify number of cores for multiprocessing.
+     Default value of 0 implies single processor operation.
+   * Use simplex fitting.
+
+---+++ Other
+   * Updated the code and/or calibration update procedure.
+   * Added new script plot_resid_comparison.py to compare residuals for the 
+     new vs. old characteristics.
+   * Changed versioning to use a psmc_check.py code version, characteristics.py
+     version, and a minor version for non-controlled elements.
+
+---+++ Testing
+   * Ran new psmc_check.py using the _current_ release characteristics.py and
+     compared to outputs from the release psmc_check.py for DEC2109.  Only expected
+     diffs in output file names were seen and temperature predictions were identical.
+   * Compared model residuals for a span 2009:185 - 2010:001 and found the expected
+     improvement in the reduction of underpredictions (large data - model values).
+     The 1PDEAAT quantiles are below.  No change was seen in pitch, power, or SIM-Z.
+
+| *Quant* |  *1* |  *5* | *16* | *50* | *84* | *95* | *99* |
+|Release  | -3.97| -2.82| -1.52|  0.31|  2.47|  3.99|  5.67|
+|New      | -3.99| -2.91| -1.82| -0.17|  1.82|  3.15|  4.70|

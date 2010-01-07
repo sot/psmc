@@ -8,6 +8,7 @@ import sys
 import time
 import optparse
 
+import matplotlib.pyplot as plt
 import Chandra.Time
 import numpy as np
 import twodof
@@ -20,10 +21,7 @@ from sherpa.astro.ui import *
 from sherpa.stats import *
 from sherpa.optmethods import *
 from sherpa.estmethods import *
-from sherpa.fit import Fit
-from pychips import *
-from pychips.hlui import *
-from pychips.advanced import *
+
 
 PARNAMES = sorted(characteristics.model_par)
 
@@ -45,10 +43,9 @@ def psmc_temps_model(msid, tlm, states):
 
     return psmc_temp
 
-def psmc_temps_model_multi(msid, tlm, states):
+def psmc_temps_model_multi(msid, tlm, states, n_core):
     """Return a sherpa model to evaluate PSMC temperatures at given times."""
     from multiprocessing import Process, Pipe
-    n_core = 4
     core_tstarts = np.linspace(tlm[0].date, tlm[-1].date, n_core+1)
 
     # Divide the states up into n_core pieces.  Force the start/end values
@@ -137,7 +134,7 @@ def get_tlm_states(datestop='2009-06-01T00:00:00', ndays=180):
 
     return tlm, states, statevals
 
-def init_models_data(tlm, states, model_par):
+def init_models_data(tlm, states, model_par, n_core):
     staterror = {'1pdeaat' : 1.0,
                  '1pdeabt' : 4.0,
                  '1pin1at' : 1.0}
@@ -155,8 +152,12 @@ def init_models_data(tlm, states, model_par):
     T_dea0 = dat1.y[0]
     T_pin0 = dat2.y[0]
 
-    dea_temps = psmc_temps_model_multi('1pdeaat', tlm, states)
-    pin_temps = psmc_temps_model_multi('1pin1at', tlm, states)
+    if n_core > 0:
+        dea_temps = psmc_temps_model_multi('1pdeaat', tlm, states, n_core)
+        pin_temps = psmc_temps_model_multi('1pin1at', tlm, states, n_core)
+    else:
+        dea_temps = psmc_temps_model('1pdeaat', tlm, states)
+        pin_temps = psmc_temps_model('1pin1at', tlm, states)
 
     set_stat('chi2gehrels')
 
@@ -181,64 +182,44 @@ def print_model_par():
     print '                )'
 
 def save_fit_figures(root, dat1, statevals):
-    set_preferences('export.clobber=1')
-    set_preferences('window.display=false')
     print 'Residuals'
-    t0 = time.time()
-    add_window(8, 4, 'inches')
+    plt.figure(figsize=(8,4))
     plot_fit_resid(1)
-    print time.time()-t0
 
-    current_plot("plot1")
-    set_plot_xlabel('Time (seconds)')
-    set_plot_ylabel('Temperature (degC)')
-    set_plot_title('Fit and residuals (data - model)')
-    print time.time()-t0
-
-    print_window(root + 'fit_resid', ['format', 'png'])
-    print time.time()-t0
+    plt.xlabel('Time (seconds)')
+    plt.ylabel('Temperature (degC)')
+    plt.title('Fit and residuals (data - model)')
+    plt.savefig(root + 'fit_resid.png')
 
     mp = get_model_plot()
     print 'Histogram'
-    hy, hx = np.histogram(dat1.y - mp.y, bins=30)
-    add_window(5.5, 4, 'inches')
+    plt.figure(figsize=(5.5, 4))
+    plt.hist(dat1.y - mp.y, bins=30)
 
-    t0 = time.time()
-    add_histogram(hx[:-1], hx[1:], hy)
-    print time.time()-t0
+    plt.xlabel('Fit residuals (data - model)')
+    plt.title('Fit residual distribution (degC)')
 
-    set_plot_xlabel('Fit residuals (data - model)')
-    set_plot_title('Fit residual distribution (degC)')
-    print time.time()-t0
+    plt.savefig(root + 'fit_resid_hist.png')
 
-    print_window(root + 'fit_resid_hist', ['format', 'png'])
-    print time.time()-t0
-
-    add_window(5.5,4,'inches')
+    plt.figure(figsize=(5.5, 4))
     print 'Scatter'
-    t0 = time.time()
-    add_curve(dat1.y + np.random.uniform(-1.25, 1.25, len(dat1.y)), dat1.y - mp.y)
-    set_curve(['line.style', 'none', 'symbol.style', 'point'])
-    t1 = time.time(); print t1-t0
-    set_plot_xlabel('Temperature (degC from telemetry)')
-    set_plot_ylabel('Residual (data-model) (degC)')
-    set_plot_title('Fit residual vs. temperature')
-    t1 = time.time(); print t1-t0
-    print_window(root + 'fit_resid_vs_temp', ['format', 'png'])
-    t1 = time.time(); print t1-t0
+    plt.plot(dat1.y + np.random.uniform(-1.25, 1.25, len(dat1.y)), dat1.y - mp.y, '.')
+    plt.xlabel('Temperature (degC from telemetry)')
+    plt.ylabel('Residual (data-model) (degC)')
+    plt.title('Fit residual vs. temperature')
+    plt.savefig(root + 'fit_resid_vs_temp.png')
 
-    add_window(5.5,4,'inches')
+    plt.figure(figsize=(5.5, 4))
     print 'Scatter2'
     t0 = time.time()
-    add_curve(statevals['simpos'] + np.random.uniform(-5000, 5000, len(statevals['simpos'])),
-              statevals['pitch'])
-    set_curve(['line.style', 'none', 'symbol.style', 'point'])
+    plt.plot(statevals['simpos'] + np.random.uniform(-5000, 5000, len(statevals['simpos'])),
+              statevals['pitch'], '.')
     t1 = time.time(); print t1-t0
-    set_plot_xlabel('SIM-Z (counts)')
-    set_plot_ylabel('Pitch (degrees)')
-    set_plot_title('Data coverage (each dot = 32 sec)')
+    plt.xlabel('SIM-Z (counts)')
+    plt.ylabel('Pitch (degrees)')
+    plt.title('Data coverage (each dot = 32 sec)')
     t1 = time.time(); print t1-t0
-    print_window(root + 'fit_pitch_simpos', ['format', 'png'])
+    plt.savefig(root + 'fit_pitch_simpos.png')
     t1 = time.time(); print t1-t0
 
 def fitall():
@@ -315,23 +296,34 @@ def get_options():
                       action='store_false',
                       dest='fit',
                       help="Do not do fitting")
+    parser.add_option('--n-core',
+                      type='int',
+                      default=0,
+                      help="Number of multiprocessing cores (default=0 => no multiprocessing)")
     return parser.parse_args()
         
 def main():
+    global opt
     opt, args = get_options()
 
     if opt.datestop is None:
         opt.datestop = Chandra.Time.DateTime(time.time()-7*86400, format='unix').date
         print 'Datestop =', opt.datestop
 
+    set_method('simplex')
+    get_method().config.update(dict(ftol=1e-3,
+                         finalsimplex=0,
+                         maxfev=2000))
+
     # Fit HRC-I and HRC-S (typically for a longer period such as 365 days)
     model_par = characteristics.model_par
     tlm, states, statevals = get_tlm_states(opt.datestop, opt.ndays_hrc)
-    dea, pin, dat1, dat2 = init_models_data(tlm, states, model_par)
+    dea, pin, dat1, dat2 = init_models_data(tlm, states, model_par, opt.n_core)
 
     print 'Original model pars:'
     print_model_par()
 
+    freeze(dea)
     for detector in ('hrci', 'hrcs'):
         for pitch in ('50', '90', '150'):
             thaw(getattr(dea, detector + pitch))
@@ -348,14 +340,16 @@ def main():
     # Fit ACIS-I and ACIS-S and time constants (typically for a shorter period
     # such as 180 days).  This is because ACIS has more coverage and may vary faster.
     tlm, states, statevals = get_tlm_states(opt.datestop, opt.ndays_acis)
-    dea, pin, dat1, dat2 = init_models_data(tlm, states, model_par)
+    dea, pin, dat1, dat2 = init_models_data(tlm, states, model_par, opt.n_core)
     
+    freeze(dea)
     for pitch in ('50', '90', '150'):
         thaw(getattr(dea, 'acis' + pitch))
     thaw(dea.u01)
     thaw(dea.u12)
     thaw(dea.c1)
     thaw(dea.c2)
+    freeze(dea.u01quad)
 
     print 'Fitting ACIS-I, ACIS-S and time constants at', time.ctime()
     if opt.fit:
@@ -368,7 +362,10 @@ def main():
 
     save_fit_figures(opt.figroot, dat1, statevals)
     print_model_par()
-    killall()
+    if opt.n_core > 0:
+        print 'Killing processes'
+        killall()
+    print 'Goodbye'
 
 if __name__ == '__main__':
     main()

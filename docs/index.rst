@@ -119,14 +119,15 @@ near 2009:227.
 
 Update procedure
 ----------------
-- Use the following commands from the shell to generate a new set of PSMC model
-  parameters::
+- Start a PSMC model or code update as follows::
 
-    svn checkout file:///proj/sot/ska/svn/psmc/trunk/predict predict
-    cd predict
-    ciao
-    setenv PYTHONPATH /home/aldcroft/ciaopy/lib/python
-    python psmc_calibrate.py | tee psmc_calibrate.log
+    cd <scratch_dir>
+    hg clone /proj/sot/ska/hg/psmc
+    cd psmc
+
+- To update the calibration do::
+
+    python psmc_calibrate.py |& tee psmc_calibrate.log
 
 - Compare parameters to existing values.  Watch for outliers and examine
   fit_pitch_simpos.png for coverage.  Note that this plot shows coverage
@@ -136,29 +137,53 @@ Update procedure
 - Update the model_par definition from screen output or ``psmc_calibrate.log`` 
   and update the calibration ``VERSION`` in characteristics.py.
 
-- Update project ``VERSION`` in ``Makefile``.
+- Test the new code or characteristics file by running the following with <DATE> set
+  to a date a day or two before the schedule start::
 
-- Test the new characteristics file by running::
-
-    /proj/sot/ska/bin/psmc_check --oflsdir <latest_ofls_dir> --outdir out_release
-    python psmc_check.py --oflsdir <latest_ofls_dir> --outdir out_pre
+    /proj/sot/ska/bin/psmc_check --oflsdir <latest_ofls_dir> --outdir out_release --run_start_time <DATE>
+    python psmc_check.py --oflsdir <latest_ofls_dir> --outdir out_pre --run_start_time <DATE>
     ./scs107_settling.py
 
   Ensure that results are sensible and that the ``VERSION`` matches expectation.
 
+- Quantify improvement in predictions, where <DATE> is a date a few days ago::
+
+    /proj/sot/ska/bin/psmc_check --run_start_time <DATE> --outdir val_release --days 180
+    python psmc_check.py --run_start_time <DATE> --outdir val_pre --days 180
+
+  Compare the quantiles and possibly overplot the histograms.
+
+- Update ``VERSION`` in characteristics.py and psmc_check.py as needed.
+  Update ``VER_MINOR`` in ``Makefile`` for changes not affecting controlled
+  products (e.g. doc updates etc).  Then create the new ``VERSION`` file.
+
+    make version
+
+- Update ``RELEASE`` notes in TWiki format.  Copy to 
+  `PSMC release notes <http://occweb.cfa.harvard.edu/twiki/bin/edit/ThermalWG/PsmcReleaseNotes>`_.
+
 - Examine diffs then commit the changes::
 
-    svn diff --diff-cmd tkdiff
-    svn commit -m "Update model calibration with data through <stopdate>: version <VERSION>"
+    hg status
+    hg extdiff -p tkdiff psmc_check.py   # etc
+    hg commit -m "Update model calibration with data through <stopdate>: version <VERSION>"
 
 - Obtain review approval at the load review, install new files, and test::
 
+    make version
     make docs
     make dist
     make install
     /proj/sot/ska/bin/psmc_check --oflsdir <latest_ofls_dir> --outdir out_post
 
   Make sure that ``out_post`` and ``out_pre`` results are identical.
+
+- Push back to main repository::
+
+    hg outgoing /proj/sot/ska/hg/psmc
+    hg push /proj/sot/ska/hg/psmc
+    cd /proj/sot/ska/hg/psmc
+    hg update
 
 Tools
 ====================

@@ -19,6 +19,7 @@ import datetime
 import re
 import time
 import shutil
+import pickle
 
 import numpy as np
 import Ska.DBI
@@ -39,6 +40,8 @@ if __name__ == '__main__':
 import matplotlib.pyplot as plt
 import Ska.Matplotlib
 
+VERSION = 8
+
 MSID = dict(dea='1PDEAAT', pin='1PIN1AT')
 YELLOW = dict(dea=characteristics.T_dea_yellow, pin=characteristics.T_pin_yellow)
 MARGIN = dict(dea=characteristics.T_dea_margin, pin=characteristics.T_pin_margin)
@@ -46,7 +49,6 @@ MARGIN = dict(dea=characteristics.T_dea_margin, pin=characteristics.T_pin_margin
 TASK_DATA = os.path.join(os.environ['SKA'], 'data', 'psmc')
 URL = "http://cxc.harvard.edu/mta/ASPECT/psmc_daily_check"
 
-db = Ska.DBI.DBI(dbi='sybase', server='sybase', user='aca_read', database='aca')
 logger = logging.getLogger('psmc_check')
 
 def get_options():
@@ -82,7 +84,6 @@ def get_options():
                       default=21.0,
                       help="Days of validation data (days)")
     parser.add_option("--run_start_time",
-                      default= DateTime(time.time(), format='unix').date,
                       help="Reference time to replace run start time for regression testing")
     parser.add_option("--traceback",
                       default=True,
@@ -94,6 +95,9 @@ def get_options():
                       type='int',
                       default=1,
                       help="Verbosity (0=quiet, 1=normal, 2=debug)")
+    parser.add_option("--version",
+                      action='store_true',
+                      help="Print version")
 
     opt, args = parser.parse_args()
     return opt, args
@@ -115,13 +119,14 @@ def main(opt):
     logger.info('#####################################################################')
     logger.info('# psmc_check.py run at %s by %s' % (proc['run_time'], proc['run_user']))
     logger.info('# psmc_check version = ' + open(versionfile).read().strip())
-    logger.info('# characteristics version = ' + characteristics.VERSION)
+    logger.info('# characteristics version = %s' % characteristics.VERSION)
     logger.info('#####################################################################\n')
 
     logger.info('Command line options:\n%s\n' % pformat(opt.__dict__))
 
     # Connect to database (NEED TO USE aca_read)
     logger.info('Connecting to database to get cmd_states')
+    db = Ska.DBI.DBI(dbi='sybase', server='sybase', user='aca_read', database='aca')
     
     tnow = DateTime(opt.run_start_time).secs
     if opt.oflsdir is not None:
@@ -146,12 +151,12 @@ def main(opt):
   
     # make predictions on oflsdir if defined
     if opt.oflsdir is not None:
-        pred = make_week_predict( opt, tstart, tstop, bs_cmds, tlm)
+        pred = make_week_predict( opt, tstart, tstop, bs_cmds, tlm, db)
     else:
         pred = dict(plots=None, viols=None, times=None, states=None, temps=None)
 
     # Validation
-    plots_validation = make_validation_plots(opt.outdir, tlm, db)
+    plots_validation = make_validation_plots(opt, tlm, db)
     valid_viols = make_validation_viols(plots_validation)
     if len(valid_viols) > 0:
         # generate daily plot url if outdir in expected year/day format 
@@ -172,7 +177,7 @@ def main(opt):
                 plots_validation=plots_validation)
 
 
-def make_week_predict( opt, tstart, tstop, bs_cmds, tlm ):
+def make_week_predict(opt, tstart, tstop, bs_cmds, tlm, db):
 
     # Try to make initial state0 from cmd line options
     state0 = dict((x, getattr(opt, x)) for x in ('pitch', 'simpos',
@@ -608,7 +613,7 @@ def get_states(datestart, datestop, db):
 
     return states
 
-def make_validation_plots(outdir, tlm, db):
+def make_validation_plots(opt, tlm, db):
     """
     Make validation output plots.
     
@@ -617,6 +622,7 @@ def make_validation_plots(outdir, tlm, db):
     :param db: database handle
     :returns: list of plot info including plot file names
     """
+    outdir = opt.outdir
     states = get_states(tlm[0].date, tlm[-1].date, db)
     tlm = Ska.Numpy.add_column(tlm, 'power', smoothed_power(tlm))
 
@@ -655,9 +661,7 @@ def make_validation_plots(outdir, tlm, db):
     quantiles = (1, 5, 16, 50, 84, 95, 99)
     # store lines of quantile table in a string and write out later
     quant_table = ''
-    quant_head = "MSID"
-    for quant in quantiles:
-        quant_head += ",quant%d" % quant
+    quant_head = ",".join(['MSID'] + ["quant%d" % x for x in quantiles])
     quant_table += quant_head + "\n"
     for fig_id, msid in enumerate(sorted(pred)):
         plot = dict(msid=msid.upper())
@@ -682,6 +686,7 @@ def make_validation_plots(outdir, tlm, db):
             plot['quant%02d' % quant] = fmts[msid] % quant_val
             quant_line += (',' + fmts[msid] % quant_val)
         quant_table += quant_line + "\n"
+
         for histscale in ('log', 'lin'):
             fig = plt.figure(20+fig_id, figsize=(4,3))
             fig.clf()
@@ -698,11 +703,21 @@ def make_validation_plots(outdir, tlm, db):
 
         plots.append(plot)
 
-    quant_filename = os.path.join(outdir, 'validation_quant.csv')
-    quant_file = open(quant_filename, 'w')
-    logger.info('Writing quantile table %s' % quant_filename)
-    quant_file.write(quant_table)
-    quant_file.close()
+    filename = os.path.join(outdir, 'validation_quant.csv')
+    logger.info('Writing quantile table %s' % filename)
+    f = open(filename, 'w')
+    f.write(quant_table)
+    f.close()
+    
+    # If run_start_time is specified this is likely for regression testing
+    # or other debugging.  In this case write out the full predicted and
+    # telemetered dataset as a pickle.
+    if opt.run_start_time:
+        filename = os.path.join(outdir, 'validation_data.pkl')
+        logger.info('Writing validation data %s' % filename)
+        f = open(filename, 'w')
+        pickle.dump({'pred': pred, 'tlm': tlm}, f, protocol=-1)
+        f.close()
 
     return plots
 
@@ -782,6 +797,10 @@ def smoothed_power(tlm):
 
 if __name__ == '__main__':
     opt, args = get_options()
+    if opt.version:
+        print VERSION
+        sys.exit(0)
+
     try:
         main(opt)
     except Exception, msg:
