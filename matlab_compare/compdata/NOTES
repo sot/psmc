@@ -1,0 +1,21 @@
+run_py_weeks.sh 
+   - script to run /proj/sot/ska/dev/psmc/psmc_check.py
+
+py_dec2809a
+py_dec2908b
+py_nov0308b
+py_sep2809b
+   - dirs made by run_py_weeks.sh
+
+mat_b_dec2908b
+mat_b_nov0308b
+mat_b_sep2809b
+mat_b_dec2908b
+   - directories containing states and temperature exports
+     from the backstop runs of MCC
+
+mat_d_dec2908b
+mat_d_nov0308b
+mat_d_sep2809b
+   - directories containing states and temperature exports
+     from DOT import runs of MCC (not present in all releases)

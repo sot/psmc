@@ -1,0 +1,62 @@
+#####################################################################
+# psmc_check.py run at Fri Jan  8 13:38:31 2010 by jeanconn
+# psmc_check version = 8.6.0
+# characteristics version = 6
+#####################################################################
+
+Command line options:
+{'T_dea': None,
+ 'T_pin': None,
+ 'days': 21.0,
+ 'dt': 32.799999999999997,
+ 'oflsdir': '/data/mpcrit1/mplogs/2008/NOV0308/oflsb/',
+ 'old_cmds': None,
+ 'outdir': 'py_nov0308b',
+ 'pitch': None,
+ 'power': None,
+ 'run_start_time': None,
+ 'simpos': None,
+ 'traceback': True,
+ 'verbose': 1,
+ 'version': None}
+
+Connecting to database to get cmd_states
+Using backstop file /data/mpcrit1/mplogs/2008/NOV0308/oflsb/CR307_1203.backstop
+Found 1622 backstop commands between 2008:307:12:54:26.141 and 2008:315:10:06:38.024
+Fetching telemetry between 2008:286:12:54:26.141 and 2008:307:12:54:26.141
+Found 0 timeline_loads  after 2008:307:12:57:26.141
+Got 0 cmds from database between 2008:307:12:57:26.141 and 2008:307:12:54:26.141
+Found 439 commanded states from 2008:307:11:39:43.973 to 2008:315:10:06:38.024
+Calculating PSMC thermal model
+Making temperature check plots
+Writing plot file py_nov0308b/1pdeaat.png
+Writing plot file py_nov0308b/1pin1at.png
+Writing plot file py_nov0308b/pow_sim.png
+Checking for limit violations
+Writing states to py_nov0308b/states.dat
+Writing temperatures to py_nov0308b/temperatures.dat
+Getting commanded states between 2008:286:12:54:26.141 - 2008:307:12:54:23.742
+Found 1105 commanded states
+Calculating PSMC thermal model for validation
+Making PSMC model validation plots and quantile table
+Writing plot file py_nov0308b/1pdeaat_valid.png
+Writing plot file py_nov0308b/1pdeaat_valid_hist_log.png
+Writing plot file py_nov0308b/1pdeaat_valid_hist_lin.png
+Writing plot file py_nov0308b/1pin1at_valid.png
+Writing plot file py_nov0308b/1pin1at_valid_hist_log.png
+Writing plot file py_nov0308b/1pin1at_valid_hist_lin.png
+Writing plot file py_nov0308b/aosares1_valid.png
+Writing plot file py_nov0308b/aosares1_valid_hist_log.png
+Writing plot file py_nov0308b/aosares1_valid_hist_lin.png
+Writing plot file py_nov0308b/power_valid.png
+Writing plot file py_nov0308b/power_valid_hist_log.png
+Writing plot file py_nov0308b/power_valid_hist_lin.png
+Writing plot file py_nov0308b/tscpos_valid.png
+Writing plot file py_nov0308b/tscpos_valid_hist_log.png
+Writing plot file py_nov0308b/tscpos_valid_hist_lin.png
+Writing quantile table py_nov0308b/validation_quant.csv
+Checking for validation violations
+WARNING: 1PDEAAT 50% quantile value of 1.51 exceeds limit of 1.00
+WARNING: 1PDEAAT 99% quantile value of 6.28 exceeds limit of 5.50
+validation warning(s) in output at py_nov0308b
+Writing report file py_nov0308b/index.rst

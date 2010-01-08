@@ -1,0 +1,62 @@
+#####################################################################
+# psmc_check.py run at Fri Jan  8 13:40:01 2010 by jeanconn
+# psmc_check version = 8.6.0
+# characteristics version = 6
+#####################################################################
+
+Command line options:
+{'T_dea': None,
+ 'T_pin': None,
+ 'days': 21.0,
+ 'dt': 32.799999999999997,
+ 'oflsdir': '/data/mpcrit1/mplogs/2009/DEC2809/oflsa/',
+ 'old_cmds': None,
+ 'outdir': 'py_dec2809a',
+ 'pitch': None,
+ 'power': None,
+ 'run_start_time': None,
+ 'simpos': None,
+ 'traceback': True,
+ 'verbose': 1,
+ 'version': None}
+
+Connecting to database to get cmd_states
+Using backstop file /data/mpcrit1/mplogs/2009/DEC2809/oflsa/CR361_2303.backstop
+Found 2585 backstop commands between 2009:361:23:27:00.000 and 2010:011:03:01:45.385
+Fetching telemetry between 2009:340:23:27:00.000 and 2009:361:23:27:00.000
+Found 1 timeline_loads  after 2009:361:23:26:56.768
+Got 3 cmds from database between 2009:361:23:26:56.768 and 2009:361:23:27:00.000
+Found 795 commanded states from 2009:361:23:23:56.768 to 2010:011:03:01:45.385
+Calculating PSMC thermal model
+Making temperature check plots
+Writing plot file py_dec2809a/1pdeaat.png
+Writing plot file py_dec2809a/1pin1at.png
+Writing plot file py_dec2809a/pow_sim.png
+Checking for limit violations
+Writing states to py_dec2809a/states.dat
+Writing temperatures to py_dec2809a/temperatures.dat
+Getting commanded states between 2009:340:23:27:00.000 - 2009:361:23:26:57.601
+Found 1470 commanded states
+Calculating PSMC thermal model for validation
+Making PSMC model validation plots and quantile table
+Writing plot file py_dec2809a/1pdeaat_valid.png
+Writing plot file py_dec2809a/1pdeaat_valid_hist_log.png
+Writing plot file py_dec2809a/1pdeaat_valid_hist_lin.png
+Writing plot file py_dec2809a/1pin1at_valid.png
+Writing plot file py_dec2809a/1pin1at_valid_hist_log.png
+Writing plot file py_dec2809a/1pin1at_valid_hist_lin.png
+Writing plot file py_dec2809a/aosares1_valid.png
+Writing plot file py_dec2809a/aosares1_valid_hist_log.png
+Writing plot file py_dec2809a/aosares1_valid_hist_lin.png
+Writing plot file py_dec2809a/power_valid.png
+Writing plot file py_dec2809a/power_valid_hist_log.png
+Writing plot file py_dec2809a/power_valid_hist_lin.png
+Writing plot file py_dec2809a/tscpos_valid.png
+Writing plot file py_dec2809a/tscpos_valid_hist_log.png
+Writing plot file py_dec2809a/tscpos_valid_hist_lin.png
+Writing quantile table py_dec2809a/validation_quant.csv
+Checking for validation violations
+WARNING: 1PDEAAT 99% quantile value of 5.86 exceeds limit of 5.50
+WARNING: AOSARES1 99% quantile value of 2.746 exceeds limit of 2.50
+validation warning(s) in output at py_dec2809a
+Writing report file py_dec2809a/index.rst

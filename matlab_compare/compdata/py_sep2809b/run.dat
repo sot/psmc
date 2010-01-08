@@ -1,7 +1,7 @@
 #####################################################################
-# psmc_check.py run at Tue Oct  6 18:44:54 2009 by jeanconn
-# psmc_check version = 0.04
-# characteristics version = 0.04
+# psmc_check.py run at Fri Jan  8 13:39:35 2010 by jeanconn
+# psmc_check version = 8.6.0
+# characteristics version = 6
 #####################################################################
 
 Command line options:
@@ -9,24 +9,22 @@ Command line options:
  'T_pin': None,
  'days': 21.0,
  'dt': 32.799999999999997,
- 'oflsdir': 'SEP2809B/',
- 'outdir': 'py_sep2809b/',
+ 'oflsdir': '/data/mpcrit1/mplogs/2009/SEP2809/oflsb/',
+ 'old_cmds': None,
+ 'outdir': 'py_sep2809b',
  'pitch': None,
  'power': None,
- 'run_start_time': '2009:279:22:44:54.260',
+ 'run_start_time': None,
  'simpos': None,
  'traceback': True,
- 'verbose': 1}
+ 'verbose': 1,
+ 'version': None}
 
 Connecting to database to get cmd_states
-Using backstop file SEP2809B/CR270_1606.backstop
+Using backstop file /data/mpcrit1/mplogs/2009/SEP2809/oflsb/CR270_1606.backstop
 Found 1058 backstop commands between 2009:270:16:53:50.536 and 2009:277:08:37:52.372
 Fetching telemetry between 2009:249:16:53:50.536 and 2009:270:16:53:50.536
-get_cmds: got 51 commands from /data/mpcrit1/mplogs/2009/OCT0509/oflsa/CR277_0801.backstop
-get_cmds: got 117 commands from /data/mpcrit1/mplogs/2009/OCT0509/oflsa/CR277_0801.backstop
-get_cmds: got 67 commands from /data/mpcrit1/mplogs/2009/OCT0509/oflsa/CR277_0801.backstop
-get_cmds: got 56 commands from /data/mpcrit1/mplogs/2009/OCT0509/oflsa/CR277_0801.backstop
-get_cmds: got 59 commands from /data/mpcrit1/mplogs/2009/OCT0509/oflsa/CR277_0801.backstop
+Found 0 timeline_loads  after 2009:270:16:56:50.536
 Got 0 cmds from database between 2009:270:16:56:50.536 and 2009:270:16:53:50.536
 Found 321 commanded states from 2009:270:06:19:10.787 to 2009:277:08:37:52.372
 Calculating PSMC thermal model
@@ -35,6 +33,7 @@ Writing plot file py_sep2809b/1pdeaat.png
 Writing plot file py_sep2809b/1pin1at.png
 Writing plot file py_sep2809b/pow_sim.png
 Checking for limit violations
+WARNING: 1PIN1AT exceeds planning limit of 36.50 degC from 2009:274:13:34:00.387 to 2009:274:14:25:56.387
 Writing states to py_sep2809b/states.dat
 Writing temperatures to py_sep2809b/temperatures.dat
 Getting commanded states between 2009:249:16:53:50.536 - 2009:270:16:53:48.137
@@ -58,4 +57,6 @@ Writing plot file py_sep2809b/tscpos_valid_hist_log.png
 Writing plot file py_sep2809b/tscpos_valid_hist_lin.png
 Writing quantile table py_sep2809b/validation_quant.csv
 Checking for validation violations
+WARNING: 1PIN1AT 1% quantile value of -5.56 exceeds limit of 5.50
+validation warning(s) in output at py_sep2809b
 Writing report file py_sep2809b/index.rst

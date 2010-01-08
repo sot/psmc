@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
+<title></title>
+<style type="text/css">
+
+@import url("html4css1.css");
+
+pre.red { color: red }
+pre.green { color: green }
+span.red { color: red }
+span.blue { color: blue }
+span.green { color: green }
+
+body { 
+  max-width:950px; 
+  font-family: sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6, p.topic-title {
+  color: #660033;
+}
+
+h1 {  font-size: x-large }
+h2 {  font-size: large }
+h3 {  font-size: medium }
+h1.title {  font-size: x-large }
+
+</style>
+</head>
+<body>
+<div class="document">
+
+
+<div class="section" id="psmc-temperatures-check">
+<h1>PSMC temperatures check</h1>
+<div class="section" id="summary">
+<h2>Summary</h2>
+<table border="1" class="borderless docutils">
+
+<tbody valign="top">
+<tr><td>Date start</td>
+<td>2008:307:12:54:26.141</td>
+</tr>
+<tr><td>Date stop</td>
+<td>2008:315:10:06:38.024</td>
+</tr>
+<tr><td>1PDEAAT status</td>
+<td>OK (limit = 52.5 C)</td>
+</tr>
+<tr><td>1PIN1AT status</td>
+<td>OK (limit = 36.5 C)</td>
+</tr>
+<tr><td>Run time</td>
+<td>Fri Jan  8 13:38:31 2010 by jeanconn</td>
+</tr>
+<tr><td>Run log</td>
+<td><a class="reference external" href="run.dat">run.dat</a></td>
+</tr>
+<tr><td>Temperatures</td>
+<td><a class="reference external" href="temperatures.dat">temperatures.dat</a></td>
+</tr>
+<tr><td>States</td>
+<td><a class="reference external" href="states.dat">states.dat</a></td>
+</tr>
+</tbody>
+</table>
+<p>No 1PDEAAT Violations</p>
+<p>No 1PIN1AT Violations</p>
+<img alt="1pdeaat.png" src="1pdeaat.png" />
+<img alt="1pin1at.png" src="1pin1at.png" />
+<img alt="pow_sim.png" src="pow_sim.png" />
+</div>
+</div>
+<div class="section" id="psmc-model-validation">
+<h1>PSMC Model Validation</h1>
+<div class="section" id="msid-quantiles">
+<h2>MSID quantiles</h2>
+<table border="1" class="docutils">
+
+<thead valign="bottom">
+<tr><th class="head">MSID</th>
+<th class="head">1%</th>
+<th class="head">5%</th>
+<th class="head">16%</th>
+<th class="head">50%</th>
+<th class="head">84%</th>
+<th class="head">95%</th>
+<th class="head">99%</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>1PDEAAT</td>
+<td>-2.15</td>
+<td>-1.13</td>
+<td>-0.01</td>
+<td>1.51</td>
+<td>3.90</td>
+<td>5.26</td>
+<td>6.28</td>
+</tr>
+<tr><td>1PIN1AT</td>
+<td>-3.73</td>
+<td>-2.37</td>
+<td>-1.14</td>
+<td>0.71</td>
+<td>2.85</td>
+<td>3.82</td>
+<td>5.01</td>
+</tr>
+<tr><td>AOSARES1</td>
+<td>-2.126</td>
+<td>-0.132</td>
+<td>-0.033</td>
+<td>0.035</td>
+<td>0.160</td>
+<td>0.185</td>
+<td>2.300</td>
+</tr>
+<tr><td>POWER</td>
+<td>-7.09</td>
+<td>-3.40</td>
+<td>-1.28</td>
+<td>0.89</td>
+<td>4.03</td>
+<td>6.02</td>
+<td>8.87</td>
+</tr>
+<tr><td>TSCPOS</td>
+<td>-1</td>
+<td>-1</td>
+<td>-1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="validation-violations">
+<h2>Validation Violations</h2>
+<table border="1" class="docutils">
+
+<thead valign="bottom">
+<tr><th class="head">MSID</th>
+<th class="head">Quantile</th>
+<th class="head">Value</th>
+<th class="head">Limit</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>1PDEAAT</td>
+<td>50</td>
+<td>1.51</td>
+<td>1.00</td>
+</tr>
+<tr><td>1PDEAAT</td>
+<td>99</td>
+<td>6.28</td>
+<td>5.50</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="pdeaat">
+<h2>1PDEAAT</h2>
+<p>Red = telemetry, blue = model</p>
+<img alt="1pdeaat_valid.png" src="1pdeaat_valid.png" />
+<img alt="1pdeaat_valid_hist_log.png" src="1pdeaat_valid_hist_log.png" />
+<img alt="1pdeaat_valid_hist_lin.png" src="1pdeaat_valid_hist_lin.png" />
+</div>
+<div class="section" id="pin1at">
+<h2>1PIN1AT</h2>
+<p>Red = telemetry, blue = model</p>
+<img alt="1pin1at_valid.png" src="1pin1at_valid.png" />
+<img alt="1pin1at_valid_hist_log.png" src="1pin1at_valid_hist_log.png" />
+<img alt="1pin1at_valid_hist_lin.png" src="1pin1at_valid_hist_lin.png" />
+</div>
+<div class="section" id="aosares1">
+<h2>AOSARES1</h2>
+<p>Red = telemetry, blue = model</p>
+<img alt="aosares1_valid.png" src="aosares1_valid.png" />
+<img alt="aosares1_valid_hist_log.png" src="aosares1_valid_hist_log.png" />
+<img alt="aosares1_valid_hist_lin.png" src="aosares1_valid_hist_lin.png" />
+</div>
+<div class="section" id="power">
+<h2>POWER</h2>
+<p>Red = telemetry, blue = model</p>
+<img alt="power_valid.png" src="power_valid.png" />
+<img alt="power_valid_hist_log.png" src="power_valid_hist_log.png" />
+<img alt="power_valid_hist_lin.png" src="power_valid_hist_lin.png" />
+</div>
+<div class="section" id="tscpos">
+<h2>TSCPOS</h2>
+<p>Red = telemetry, blue = model</p>
+<img alt="tscpos_valid.png" src="tscpos_valid.png" />
+<img alt="tscpos_valid_hist_log.png" src="tscpos_valid_hist_log.png" />
+<img alt="tscpos_valid_hist_lin.png" src="tscpos_valid_hist_lin.png" />
+</div>
+</div>
+</div>
+</body>
+</html>
