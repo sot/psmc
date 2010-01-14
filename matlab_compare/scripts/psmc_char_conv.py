@@ -59,17 +59,26 @@ print "Thermal.msid_1pdeaat.model_defaults = struct( %s ); \n" % model_string
 
 
 print "%PSMC average power for each state (fep_count, vid_board, clocking)"
+print "% note that calcThermal1PDEAAT.m does not allow for clocking = 1 and vidboard = 0"
+print "% so those combinations from python characteristics are excluded"
 print "%['pk_ fep_count _ vid_board _ clocking', power_avg in watts]"
-power_string = ''
+
+
 # the python structure is a tuple of tuples, so this is trickier
 # a string key is made over fep_count, vid_board, clocking and the last value is the power
+power_string = ''
 for power_comb in characteristics.psmc_power:
-    power_key = "pk_%d_%d_%d" % (power_comb[0:3])
-    new_string = "'%s', %6.2f " % ( power_key, power_comb[3] )
-    if power_string == '':
-        power_string += new_string
+    # skip clocking on, vidboard off ones
+    if ( power_comb[1] == 0 and power_comb[2] == 1):
+        pass
     else:
-        power_string += ", ... \n %s" % new_string
+        power_key = "pk_%d_%d_%d" % (power_comb[0:3])
+        new_string = "'%s', %6.2f " % ( power_key, power_comb[3] )
+        if power_string == '':
+            power_string += new_string
+        else:
+            power_string += ", ... \n %s" % new_string
+        
 
 print "Thermal.msid_1pdeaat.psmc_power = struct( %s ); \n" % power_string
 
