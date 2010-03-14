@@ -20,6 +20,8 @@ import re
 import time
 import shutil
 import pickle
+import json
+import hg
 
 import numpy as np
 import Ska.DBI
@@ -27,6 +29,9 @@ import Ska.Table
 import Ska.Numpy
 import Ska.TelemArchive.fetch
 from Chandra.Time import DateTime
+import mercurial.commands
+import mercurial.ui
+import mercurial.hg
 
 import Chandra.cmd_states as cmd_states
 import characteristics
@@ -84,13 +89,11 @@ def get_options():
                       default=21.0,
                       help="Days of validation data (days)")
     parser.add_option("--run_start_time",
+                      default=DateTime().date,
                       help="Reference time to replace run start time for regression testing")
     parser.add_option("--traceback",
                       default=True,
                       help='Enable tracebacks')
-    parser.add_option("--old-cmds",
-                      action='store_true',
-                      help='Use old (version < 0.06) method to determine commands')
     parser.add_option("--verbose",
                       type='int',
                       default=1,
@@ -199,29 +202,24 @@ def make_week_predict(opt, tstart, tstop, bs_cmds, tlm, db):
     logger.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
                                            pformat(state0)))
 
-    if opt.old_cmds:
-        cmds_datestart = DateTime(state0['tstop']).date
-        cmds_datestop = DateTime(bs_cmds[0]['time']).date
-        db_cmds = cmd_states.get_cmds(cmds_datestart, cmds_datestop, db)
-    else:
-        # Get the commands after end of state0 through first backstop command time
-        cmds_datestart = state0['datestop']
-        cmds_datestop = bs_cmds[0]['date']    # *was* DateTime(bs_cmds[0]['time']).date
+    # Get the commands after end of state0 through first backstop command time
+    cmds_datestart = state0['datestop']
+    cmds_datestop = bs_cmds[0]['date']    # *was* DateTime(bs_cmds[0]['time']).date
 
-        # Get timeline load segments including state0 and beyond.
-        timeline_loads = db.fetchall("""SELECT * from timeline_loads
-                                        WHERE datestop > '%s' and datestart < '%s'"""
-                                     % (cmds_datestart, cmds_datestop))
-        logger.info('Found %s timeline_loads  after %s' % (len(timeline_loads), cmds_datestart))
+    # Get timeline load segments including state0 and beyond.
+    timeline_loads = db.fetchall("""SELECT * from timeline_loads
+                                    WHERE datestop > '%s' and datestart < '%s'"""
+                                 % (cmds_datestart, cmds_datestop))
+    logger.info('Found %s timeline_loads  after %s' % (len(timeline_loads), cmds_datestart))
 
-        # Get cmds since datestart within timeline_loads
-        db_cmds = cmd_states.get_cmds(cmds_datestart, db=db, update_db=False,
-                                      timeline_loads=timeline_loads)
+    # Get cmds since datestart within timeline_loads
+    db_cmds = cmd_states.get_cmds(cmds_datestart, db=db, update_db=False,
+                                  timeline_loads=timeline_loads)
 
-        # Delete non-load cmds that are within the backstop time span
-        # => Keep if timeline_id is not None or date < bs_cmds[0]['time']
-        db_cmds = [x for x in db_cmds if (x['timeline_id'] is not None or
-                                          x['time'] < bs_cmds[0]['time'])]
+    # Delete non-load cmds that are within the backstop time span
+    # => Keep if timeline_id is not None or date < bs_cmds[0]['time']
+    db_cmds = [x for x in db_cmds if (x['timeline_id'] is not None or
+                                      x['time'] < bs_cmds[0]['time'])]
 
     logger.info('Got %d cmds from database between %s and %s' %
                   (len(db_cmds), cmds_datestart, cmds_datestop))
@@ -239,8 +237,9 @@ def make_week_predict(opt, tstart, tstop, bs_cmds, tlm, db):
     # Create array of times at which to calculate PSMC temperatures, then do it.
     times = np.arange(state0['tstart'], tstop, opt.dt)
     logger.info('Calculating PSMC thermal model')
+    model_pars = get_model_pars()
     T_pin, T_dea = twodof.calc_twodof_model(states, state0['T_pin'], state0['T_dea'], times,
-                                            characteristics.model_par)
+                                            model_pars)
 
     # Make the PSMC limit check plots and data files
     plt.rc("axes", labelsize=10, titlesize=12)
@@ -296,6 +295,20 @@ def make_validation_viols(plots_validation):
 
     return viols
 
+
+def get_model_pars(date=None):
+    logger.info('Getting model pars for date=%s', DateTime(date).date)
+    filename = os.path.join(os.path.dirname(__file__), 'fit', 'model_pars.json')
+    try:
+        repo = hhg.Hg(os.path.dirname(filename))
+        model_pars_json = repo.cat(filename, date=date)
+    except StandardError, error:
+        model_pars_json = open(filename).read()
+        logger.warning('WARNING: could not read hg repo for %s, used existing file.\n'
+                       'Error message was: %s', filename, error)
+    model_pars = json.loads(model_pars_json)
+    logger.info(model_pars_json)
+    return model_pars
 
 def get_bs_cmds(oflsdir):
     """Return commands for the backstop file in opt.oflsdir.
@@ -631,8 +644,9 @@ def make_validation_plots(opt, tlm, db):
 
     # Create array of times at which to calculate PSMC temperatures, then do it.
     logger.info('Calculating PSMC thermal model for validation')
+    model_pars = get_model_pars(tlm.date[0])
     T_pin, T_dea = twodof.calc_twodof_model(states, T_pin0, T_dea0, tlm.date,
-                                            characteristics.model_par)
+                                            model_pars)
 
     # Interpolate states onto the tlm.date grid
     state_vals = cmd_states.interpolate_states(states, tlm.date)
@@ -664,14 +678,29 @@ def make_validation_plots(opt, tlm, db):
     quant_head = ",".join(['MSID'] + ["quant%d" % x for x in quantiles])
     quant_table += quant_head + "\n"
     for fig_id, msid in enumerate(sorted(pred)):
+        diffs = tlm[msid] - pred[msid]
+        sortdiffs = np.sort(diffs)
         plot = dict(msid=msid.upper())
-        fig = plt.figure(10+fig_id, figsize=(7,3.5))
-        fig.clf()
+        if msid == '1pdeaat':
+            fig = plt.figure(10+fig_id, figsize=(7, 6))
+            fig.clf()
+            plt.subplot(2, 1, 1)
+            hot = tlm[msid] > 45
+        else:
+            fig = plt.figure(10+fig_id, figsize=(7, 3.5))
+            fig.clf()
         scale = scales.get(msid, 1.0)
         ticklocs, fig, ax = plot_cxctime(tlm.date, tlm[msid] / scale, fig=fig, fmt='-r')
         ticklocs, fig, ax = plot_cxctime(tlm.date, pred[msid] / scale, fig=fig, fmt='-b')
         ax.set_title(msid.upper() + ' validation')
         ax.set_ylabel(labels[msid])
+        if msid == '1pdeaat':
+            plt.subplot(2, 1, 2)
+            plot_cxctime(tlm.date, diffs / scale, fmt='-b')
+            if np.any(hot):
+                plot_cxctime(tlm.date[hot], diffs[hot] / scale, fmt='.m', markersize=0.5)
+            ax.set_ylabel(labels[msid])
+            
         filename = msid + '_valid.png'
         outfile = os.path.join(outdir, filename)
         logger.info('Writing plot file %s' % outfile)
@@ -679,10 +708,9 @@ def make_validation_plots(opt, tlm, db):
         plot['lines'] = filename
 
         # Make quantiles
-        diff = np.sort(tlm[msid] - pred[msid])
         quant_line = "%s" % msid
         for quant in quantiles:
-            quant_val = diff[(len(diff) * quant) // 100]
+            quant_val = sortdiffs[(len(diffs) * quant) // 100]
             plot['quant%02d' % quant] = fmts[msid] % quant_val
             quant_line += (',' + fmts[msid] % quant_val)
         quant_table += quant_line + "\n"
@@ -691,9 +719,12 @@ def make_validation_plots(opt, tlm, db):
             fig = plt.figure(20+fig_id, figsize=(4,3))
             fig.clf()
             ax = fig.gca()
-            ax.hist(diff / scale, bins=50, log=(histscale=='log'))
+            ns, bins, patches = ax.hist(diffs / scale, bins=50, log=(histscale=='log'))
             ax.set_title(msid.upper() + ' residuals: data - model')
             ax.set_xlabel(labels[msid])
+            if msid == '1pdeaat':
+                if np.any(hot):
+                    ax.hist(diffs[hot] / scale, bins=bins, log=(histscale=='log'), facecolor='magenta')
             fig.subplots_adjust(bottom=0.18)
             filename = '%s_valid_hist_%s.png' % (msid, histscale)
             outfile = os.path.join(outdir, filename)
@@ -705,19 +736,14 @@ def make_validation_plots(opt, tlm, db):
 
     filename = os.path.join(outdir, 'validation_quant.csv')
     logger.info('Writing quantile table %s' % filename)
-    f = open(filename, 'w')
-    f.write(quant_table)
-    f.close()
+    with open(filename, 'w') as f:
+        f.write(quant_table)
     
-    # If run_start_time is specified this is likely for regression testing
-    # or other debugging.  In this case write out the full predicted and
-    # telemetered dataset as a pickle.
-    if opt.run_start_time:
-        filename = os.path.join(outdir, 'validation_data.pkl')
-        logger.info('Writing validation data %s' % filename)
-        f = open(filename, 'w')
+    # Write out the full predicted and telemetered dataset as a pickle.
+    filename = os.path.join(outdir, 'validation_data.pkl')
+    logger.info('Writing validation data %s' % filename)
+    with open(filename, 'w') as f:
         pickle.dump({'pred': pred, 'tlm': tlm}, f, protocol=-1)
-        f.close()
 
     return plots
 

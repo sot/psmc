@@ -42,24 +42,6 @@ T_pin_red = 46.0                        # 1PIN1AT red limit (degC)
 T_dea_margin = 4.5
 T_pin_margin = 4.5                 
 
-# Based on simplex fit of both 1pdeaat and 1pin1at for 200 days before
-# 2010:001.  All params except u01quad were free.
-model_par = dict(acis150 =  28.029,
-                 acis50  =  54.192,
-                 acis90  =  26.975,
-                 c1      = 114.609,
-                 c2      =  11.362,
-                 hrci150 =  32.977,
-                 hrci50  =  38.543,
-                 hrci90  =  28.053,
-                 hrcs150 =  37.265,
-                 hrcs50  =  30.715,
-                 hrcs90  =  30.013,
-                 u01     =   6.036,
-                 u01quad =  -0.599,
-                 u12     =   8.451,
-                 )
-
 # validation limits
 # 'msid' : (( quantile, absolute max value ))
 validation_limits = { '1PDEAAT' :  ((1,5.5),
