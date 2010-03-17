@@ -129,6 +129,19 @@ def psmc_temps_model_multi(msid, tlm, states, n_core, model_pars):
 
     return psmc_temp
 
+def my_stat_func(data, model, staterror, syserror=None, weight=None):
+    warm = data > 35
+    staterror = np.ones_like(data) 
+    staterror[warm] /= (1.0 + (data[warm] - 35.0) / 5.0)**2
+
+    stat = np.sum((data-model)**2 / staterror)
+    print 'stat=', stat
+    return stat, staterror
+
+def my_staterr_func(data):
+    raise Exception
+    return staterror
+
 def get_tlm_states(datestop='2009-06-01T00:00:00', ndays=180):
     datestop = Chandra.Time.DateTime(datestop)
 
@@ -172,7 +185,7 @@ def init_models_data(tlm, states, model_pars, n_core):
         dea_temps = psmc_temps_model('1pdeaat', tlm, states, model_pars)
         pin_temps = psmc_temps_model('1pin1at', tlm, states, model_pars)
 
-    ui.set_stat('chi2gehrels')
+    # ui.set_stat('chi2gehrels')
 
     ui.load_user_model(dea_temps, 'dea')
     ui.load_user_model(pin_temps, 'pin')
@@ -308,6 +321,9 @@ def main():
     ui.get_method().config.update(dict(ftol=1e-3,
                                        finalsimplex=0,
                                        maxfev=2000))
+
+    ui.load_user_stat("mystat", my_stat_func, my_staterr_func)
+    ui.set_stat(mystat)
 
     # Fit HRC-I and HRC-S (typically for a longer period such as 365 days)
     tlm, states, statevals = get_tlm_states(opt.datestop, opt.ndays_hrc)

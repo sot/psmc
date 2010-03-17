@@ -45,7 +45,7 @@ if __name__ == '__main__':
 import matplotlib.pyplot as plt
 import Ska.Matplotlib
 
-VERSION = 8
+VERSION = 9
 
 MSID = dict(dea='1PDEAAT', pin='1PIN1AT')
 YELLOW = dict(dea=characteristics.T_dea_yellow, pin=characteristics.T_pin_yellow)
@@ -237,7 +237,7 @@ def make_week_predict(opt, tstart, tstop, bs_cmds, tlm, db):
     # Create array of times at which to calculate PSMC temperatures, then do it.
     times = np.arange(state0['tstart'], tstop, opt.dt)
     logger.info('Calculating PSMC thermal model')
-    model_pars = get_model_pars()
+    model_pars = get_model_pars(times[0])
     T_pin, T_dea = twodof.calc_twodof_model(states, state0['T_pin'], state0['T_dea'], times,
                                             model_pars)
 
@@ -300,7 +300,7 @@ def get_model_pars(date=None):
     logger.info('Getting model pars for date=%s', DateTime(date).date)
     filename = os.path.join(os.path.dirname(__file__), 'fit', 'model_pars.json')
     try:
-        repo = hhg.Hg(os.path.dirname(filename))
+        repo = hg.Hg(os.path.dirname(filename))
         model_pars_json = repo.cat(filename, date=date)
     except StandardError, error:
         model_pars_json = open(filename).read()

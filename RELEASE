@@ -1,3 +1,42 @@
+---++ Version 9.7.0
+
+This version is mostly an update to the way the model calibration coefficients
+are generated, accessed, and maintained.  The psmc_calibrate.py script has been
+modified so that it can run as an automated cron task, most likely once a week.
+The coefficients are written to a data file within a directory that is version
+controlled.  In addition the diagnostic fit plots from psmc_calibrate. py are
+stored within that same directory.  The weekly coefficients and plots can then
+be accessed by date using the version control software (mercurial).
+
+The fit statistic in psmc_calibrate.py was updated to apply an extra penalty
+against model residuals for 1PDEAAT temperatures above 35 C.  Specifically the
+statistic is multiplied by (1.0 + (data - 35.0) / 5.0)**2 for 1PDEAAT data
+points above 35 C.
+
+The psmc_check.py tool has been modified to use the coefficients that most
+closely match in time the start time of the prediction interval.  This applies
+both for weekly load review predictions and validation predictions.
+
+---+++ psmc_calibrate.py
+   * Write model parameters and fit plots to a mercurial repository (location
+     spec'd with --data-dir option)
+   * Implemented logging
+   * Misc. cleanup
+   * Fixed multiprocessing so that child processes exit properly
+   * Remove orphaned routines like fitdea() etc
+
+---+++ psmc_check.py
+   * Read model parameters from mercurial repo, choosing last version that is 
+     before the time period being predicted.
+   * Reverted run_start_time option to old behavior
+   * Always write full pickle of "debug" data
+   * Improve plots (time history of residuals and hist of "hot" residuals)
+
+---+++ Other
+   * Moved model parameters out of characteristics into share/fit/model_pars.json (no
+     longer under version control in the psmc project).
+   * Added hg.py module (might break this out of psmc project later)
+
 ---++ Version 8.6.0
 
 This version is primarily an update to the model calibration coefficients in
