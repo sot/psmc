@@ -262,7 +262,7 @@ def get_options():
                       default=240,
                       help="Number of days for HRC")
     parser.add_option('--data-dir',
-                      default='fit',
+                      default=os.path.join(os.path.dirname(__file__), 'fit'),
                       help="Data files root directory")
     parser.add_option('--fit',
                       action='store_true',

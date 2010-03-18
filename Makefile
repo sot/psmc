@@ -10,7 +10,7 @@ VER_MINOR = 0
 FLIGHT_ENV = SKA
 
 BIN = psmc_check
-SHARE = psmc_check.py psmc_calibrate.py twodof.py characteristics.py VERSION run_psmc_daily.py 
+SHARE = psmc_check.py psmc_calibrate.py twodof.py characteristics.py VERSION run_psmc_daily.py hg.py
 DATA = index_template.rst index_template_val_only.rst psmc_check.css fit_resid.png fit_resid_hist.png \
        fit_resid_vs_temp.png fit_pitch_simpos.png psmc_calibrate.log VERSION task_schedule.cfg
 DOC = docs/_build/html
