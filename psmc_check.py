@@ -65,6 +65,9 @@ def get_options():
                       help="Output directory")
     parser.add_option("--oflsdir",
                        help="Load products OFLS directory")
+    parser.add_option("--pars_dir",
+                      default=os.path.join(os.path.dirname(__file__), 'fit'),
+                      help="Model parameters directory")
     parser.add_option("--power",
                       type='float',
                       help="Starting PSMC power (watts)")
@@ -298,11 +301,11 @@ def make_validation_viols(plots_validation):
 
 def get_model_pars(date=None):
     logger.info('Getting model pars for date=%s', DateTime(date).date)
-    filename = os.path.join(os.path.dirname(__file__), 'fit', 'model_pars.json')
+    filename = os.path.join(opt.pars_dir, 'model_pars.json')
     try:
         repo = hg.Hg(os.path.dirname(filename))
         model_pars_json = repo.cat(filename, date=date)
-    except StandardError, error:
+    except Exception, error:
         model_pars_json = open(filename).read()
         logger.warning('WARNING: could not read hg repo for %s, used existing file.\n'
                        'Error message was: %s', filename, error)

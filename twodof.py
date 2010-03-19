@@ -25,8 +25,10 @@ def Tf_zero_power(par, pitch, simz):
         det = 'hrcs'
     elif simz < 0:
         det = 'hrci'
+    elif simz < 85000:
+        det = 'aciss'
     else:
-        det = 'acis'
+        det = 'acisi'
         
     pitchs = np.array([50., 90., 150.])
     tfzps = np.array([par[det + '50'],

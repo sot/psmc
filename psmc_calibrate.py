@@ -122,8 +122,7 @@ def psmc_temps_model_multi(msid, tlm, states, n_core, model_pars):
             cache['1pdeaat'] = np.hstack(deas)
             cache['1pin1at'] = np.hstack(pins)
             cache['pars'] = pars
-            print '.',
-            sys.stdout.flush()
+            logger.info(str(par))
 
         return cache[msid]
 
@@ -135,7 +134,7 @@ def my_stat_func(data, model, staterror, syserror=None, weight=None):
     staterror[warm] /= (1.0 + (data[warm] - 35.0) / 5.0)**2
 
     stat = np.sum((data-model)**2 / staterror)
-    print 'stat=', stat
+    logger.info('stat=%.2f' % stat)
     return stat, staterror
 
 def my_staterr_func(data):
@@ -198,6 +197,9 @@ def init_models_data(tlm, states, model_pars, n_core):
     for parname in par_names:
         setattr(dea, parname, model_pars[parname])
         setattr(pin, parname, getattr(dea, parname))
+        if parname != 'u01quad':
+            setattr(getattr(dea, parname), 'min', 1.0)
+            setattr(getattr(dea, parname), 'max', 200.0)
 
     return dea, pin, dat1, dat2
 
@@ -283,6 +285,14 @@ def get_options():
                       action='store_true',
                       default=False,
                       help="Commit to hg repository after generating new model pars")
+    parser.add_option('--split-acis',
+                      action='store_true',
+                      default=False,
+                      help="Split ACIS paramters into ACIS-S and ACIS-I")
+    parser.add_option('--fit-dea-only',
+                      action='store_true',
+                      default=False,
+                      help="Fit only the DEA data (ignore 1PIN1AT)")
     parser.add_option('--quiet',
                       action='store_true',
                       help="Suppress stdout output")
@@ -321,7 +331,7 @@ def main():
     ui.get_method().config.update(dict(ftol=1e-3,
                                        finalsimplex=0,
                                        maxfev=2000))
-
+    
     ui.load_user_stat("mystat", my_stat_func, my_staterr_func)
     ui.set_stat(mystat)
 
@@ -338,8 +348,9 @@ def main():
             ui.thaw(getattr(dea, detector + pitch))
 
     logger.info('Fitting HRC-S and HRC-I settling temps at %s', time.ctime())
+    datasets = (1,) if opt.fit_dea_only else (1, 2)
     if opt.fit:
-        ui.fit(1, 2)
+        ui.fit(*datasets)
     ui.freeze(dea)
     logger.info('Done at %sn', time.ctime())
 
@@ -356,9 +367,14 @@ def main():
     dea, pin, dat1, dat2 = init_models_data(tlm, states, model_pars, opt.n_core)
     
     ui.freeze(dea)
-    for detector in ('acis', ):
+    for detector in ('aciss', 'acisi'):
         for pitch in ('50', '90', '150'):
             ui.thaw(getattr(dea, detector + pitch))
+    if not opt.split_acis:
+        dea.aciss50 = dea.acisi50
+        dea.aciss90 = dea.acisi90
+        dea.aciss150 = dea.acisi150
+
     ui.thaw(dea.u01)
     ui.thaw(dea.u12)
     ui.thaw(dea.c1)
@@ -367,7 +383,7 @@ def main():
 
     logger.info('Fitting ACIS-I, ACIS-S and time constants at %s', time.ctime())
     if opt.fit:
-        ui.fit(1, 2)
+        ui.fit(*datasets)
     ui.freeze(dea)
     logger.info('Done at %s', time.ctime())
 

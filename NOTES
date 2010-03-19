@@ -1,3 +1,11 @@
+./psmc_calibrate.py --datestop='2010:030' --split-acis --fit-dea-only --n-core=4 --hg-commit
+./psmc_calibrate.py --datestop='2010:037' --split-acis --fit-dea-only --n-core=4 --hg-commit
+./psmc_calibrate.py --datestop='2010:044' --split-acis --fit-dea-only --n-core=4 --hg-commit
+./psmc_calibrate.py --datestop='2010:051' --split-acis --fit-dea-only --n-core=4 --hg-commit
+./psmc_calibrate.py --datestop='2010:058' --split-acis --fit-dea-only --n-core=4 --hg-commit
+./psmc_calibrate.py --datestop='2010:065' --split-acis --fit-dea-only --n-core=4 --hg-commit
+./psmc_calibrate.py --datestop='2010:072' --split-acis --fit-dea-only --n-core=4 --hg-commit
+
 Get thermal and power telemetry
 
 /proj/sot/ska/bin/fetch --start 317252824.18 --stop 317793302.58 \
