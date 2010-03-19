@@ -24,6 +24,10 @@ both for weekly load review predictions and validation predictions.
    * Misc. cleanup
    * Fixed multiprocessing so that child processes exit properly
    * Remove orphaned routines like fitdea() etc
+   * Set parmins = 1 and parmaxes = 200 for all except u01quad
+   * Add --split-acis option to use separate ACIS-I and ACIS-S pars in
+     fitting (otherwise the I params are linked to the S params)
+   * Add --fit-dea-only option to fit only 1PDEAAT data (ignore 1PIN1AT)
 
 ---+++ psmc_check.py
    * Read model parameters from mercurial repo, choosing last version that is 
@@ -31,6 +35,9 @@ both for weekly load review predictions and validation predictions.
    * Reverted run_start_time option to old behavior
    * Always write full pickle of "debug" data
    * Improve plots (time history of residuals and hist of "hot" residuals)
+
+---+++ twodof.py
+   * Split ACIS params into I and S.
 
 ---+++ Other
    * Moved model parameters out of characteristics into share/fit/model_pars.json (no
