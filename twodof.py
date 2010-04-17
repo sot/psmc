@@ -14,7 +14,10 @@ import Ska.Numpy
 CtoK = 273.15
 KtoC = -CtoK
 
-def Tf_zero_power(par, pitch, simz):
+JAN01_2010 = 378734466.
+COS_factor = 2 * math.pi / (365.25 * 86400)
+
+def Tf_zero_power(par, pitch, simz, tstart):
     """Settling temperature (Tf) at zero PSMC power.
     The corresponds to the T0 parameter of the two-mass model.
     """
@@ -37,9 +40,10 @@ def Tf_zero_power(par, pitch, simz):
 
     # Zero power temp T0 = T2 - Pp(1/U01 + 1/U12)
     Pp = 128                    # For 6 chips => Pp = 128
-    T2 = Ska.Numpy.interpolate(tfzps, pitchs, [pitch])[0]
+    T2 = Ska.Numpy.interpolate(tfzps, pitchs, a[pitch])[0]
+    seasonal_var = par.get('cos_ampl', 0.0) * math.cos((tstart - JAN01_2010) * COS_factor)
 
-    return T2 - Pp * (1./U01 + 1./U12) + CtoK
+    return T2 - Pp * (1./U01 + 1./U12) + CtoK + seasonal_var
 
 def calc_state_temps(state, par, t, Ti, eigvals, eigvecs, eigvecinvs, U01, C1, C2):
     """Calculate predicted temperatures at the input times for a given state
@@ -63,7 +67,7 @@ def calc_state_temps(state, par, t, Ti, eigvals, eigvecs, eigvecinvs, U01, C1, C
     :rtype: numpy array of temperatures at times C{t}
     """
     # Model settling temperature at zero power for given pitch and sim-z
-    Tf_zp = Tf_zero_power(par, state['pitch'], state['simpos'])
+    Tf_zp = Tf_zero_power(par, state['pitch'], state['simpos'], state['tstart'])
     
     heat = np.array([[U01 * (Tf_zp / C1)],
                      [state['power'] / C2]])

@@ -197,9 +197,12 @@ def init_models_data(tlm, states, model_pars, n_core):
     for parname in par_names:
         setattr(dea, parname, model_pars[parname])
         setattr(pin, parname, getattr(dea, parname))
-        if parname != 'u01quad':
+        if parname != 'u01quad' and parname != 'cos_ampl':
             setattr(getattr(dea, parname), 'min', 1.0)
             setattr(getattr(dea, parname), 'max', 200.0)
+        if parname == 'cos_ampl':
+            dea.cos_ampl.min = 0.1
+            dea.cos_ampl.max = 5.0
 
     return dea, pin, dat1, dat2
 
@@ -293,6 +296,10 @@ def get_options():
                       action='store_true',
                       default=False,
                       help="Fit only the DEA data (ignore 1PIN1AT)")
+    parser.add_option('--fit-cos-ampl',
+                      action='store_true',
+                      default=False,
+                      help="Fit the seasonal variation (cosine amplitude)")
     parser.add_option('--quiet',
                       action='store_true',
                       help="Suppress stdout output")
@@ -342,13 +349,14 @@ def main():
     logger.info('Original model pars:')
     print_model_pars(par_names)
 
+    datasets = (1,) if opt.fit_dea_only else (1, 2)
+
     ui.freeze(dea)
     for detector in ('hrci', 'hrcs'):
         for pitch in ('50', '90', '150'):
             ui.thaw(getattr(dea, detector + pitch))
 
     logger.info('Fitting HRC-S and HRC-I settling temps at %s', time.ctime())
-    datasets = (1,) if opt.fit_dea_only else (1, 2)
     if opt.fit:
         ui.fit(*datasets)
     ui.freeze(dea)
@@ -375,6 +383,8 @@ def main():
         dea.aciss90 = dea.acisi90
         dea.aciss150 = dea.acisi150
 
+    if opt.fit_cos_ampl:
+        ui.thaw(dea.cos_ampl)
     ui.thaw(dea.u01)
     ui.thaw(dea.u12)
     ui.thaw(dea.c1)
@@ -397,6 +407,8 @@ def main():
     if opt.n_core > 0:
         dea.calc(None, None)
         pin.calc(None, None)
+        time.sleep(2)
+        killall()
     
     logger.info('Goodbye')
     for h in logger.handlers:

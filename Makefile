@@ -4,7 +4,7 @@ TASK = psmc
 # Versions
 VER_PSMC = `python psmc_check.py --version`
 VER_CAL = `python -m characteristics`
-VER_MINOR = 0
+VER_MINOR = 1
 
 # Uncomment the correct choice indicating either SKA or TST flight environment
 FLIGHT_ENV = SKA
