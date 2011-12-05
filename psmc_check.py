@@ -15,7 +15,6 @@ import os
 import glob
 import logging
 from pprint import pformat
-import datetime
 import re
 import time
 import shutil
@@ -25,7 +24,7 @@ import numpy as np
 import Ska.DBI
 import Ska.Table
 import Ska.Numpy
-import Ska.TelemArchive.fetch
+import Ska.engarchive.fetch_sci as fetch
 from Chandra.Time import DateTime
 
 import Chandra.cmd_states as cmd_states
@@ -143,11 +142,13 @@ def main(opt):
     # Get temperature telemetry for 3 weeks prior to min(tstart, NOW)
     tlm = get_telem_values(min(tstart, tnow),
                            ['1pdeaat', '1pin1at',
-                            'tscpos', 'aosares1',
+                            'sim_z', 'aosares1',
                             '1de28avo', '1deicacu',
                             '1dp28avo', '1dpicacu',
                             '1dp28bvo', '1dpicbcu'],
-                           days=opt.days)
+                           days=opt.days,
+                           name_map={'sim_z':'tscpos'})
+    tlm['tscpos'] = tlm['tscpos'] * -397.7225924607
   
     # make predictions on oflsdir if defined
     if opt.oflsdir is not None:
@@ -309,30 +310,34 @@ def get_bs_cmds(oflsdir):
 
     return bs_cmds
 
-def get_telem_values(tstart, colspecs, days=14, dt=32.8):
+def get_telem_values(tstart, msids, days=14, dt=32.8, name_map={}):
     """
-    Fetch last ``days`` of available ``colspecs`` telemetry values before
+    Fetch last ``days`` of available ``msids`` telemetry values before
     time ``tstart``.
 
     :param tstart: start time for telemetry (secs)
-    :param colspecs: fetch colspecs list
+    :param msids: fetch msids list
     :param days: length of telemetry request before ``tstart``
+    :param dt: sample time (secs)
+    :param name_map: dict mapping msid to recarray col name
     :returns: np recarray of requested telemetry values from fetch
     """
     tstart = DateTime(tstart).secs
     start = DateTime(tstart - days * 86400).date
     stop = DateTime(tstart).date
     logger.info('Fetching telemetry between %s and %s' % (start, stop))
-    colnames, vals = Ska.TelemArchive.fetch.fetch(start=start,
-                                                  stop=stop,
-                                                  dt=dt,
-                                                  colspecs=colspecs)
+    msidset = fetch.MSIDset(msids, start, stop)
+    msidset.interpolate(dt)
 
     # Finished when we found at least 10 good records (5 mins)
-    if len(vals) < 10:
+    if len(msidset.times) < 10:
         raise ValueError('Found no telemetry within %d days of %s' % (days, str(tstart)))
 
-    return np.rec.fromrecords(vals, names=colnames)
+    outnames = ['date'] + [name_map.get(x, x) for x in msids]
+    out = np.rec.fromarrays([msidset.times] + 
+                            [msidset[x].vals for x in msids],
+                            names=outnames)
+    return out
 
 def rst_to_html(opt, proc):
     """Run rst2html.py to render index.rst as HTML"""

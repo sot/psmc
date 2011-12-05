@@ -126,7 +126,7 @@ def get_tlm_states(datestop='2009-06-01T00:00:00', ndays=180):
                                       days=ndays, dt=300)
 
     print 'Getting states between %s : %s' % (tlm[0].date, tlm[-1].date)
-    db = Ska.DBI.DBI(dbi='sybase')
+    db = Ska.DBI.DBI(dbi='sybase', user='aca_read')
     states = psmc_check.get_states(tlm[0].date, tlm[-1].date, db)
     # Calc state values at tlm times
     indexes = np.searchsorted(states.tstop, tlm['date'])
