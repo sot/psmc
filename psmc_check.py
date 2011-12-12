@@ -326,8 +326,10 @@ def get_telem_values(tstart, msids, days=14, dt=32.8, name_map={}):
     start = DateTime(tstart - days * 86400).date
     stop = DateTime(tstart).date
     logger.info('Fetching telemetry between %s and %s' % (start, stop))
-    msidset = fetch.MSIDset(msids, start, stop)
-    msidset.interpolate(dt)
+    msidset = fetch.Msidset(msids, start, stop)
+    start = max(x.times[0] for x in msidset.values())
+    stop = min(x.times[-1] for x in msidset.values())
+    msidset.interpolate(dt, start, stop)
 
     # Finished when we found at least 10 good records (5 mins)
     if len(msidset.times) < 10:

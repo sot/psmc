@@ -1,4 +1,4 @@
-VERSION = 6
+VERSION = 7
 
 # PSMC average power for each state (fep_count, vid_board, clocking)
 # [fep_count, vid_board, clocking, power_avg]
@@ -44,21 +44,22 @@ T_pin_margin = 4.5
 
 # Based on simplex fit of both 1pdeaat and 1pin1at for 200 days before
 # 2010:001.  All params except u01quad were free.
-model_par = dict(acis150 =  28.029,
-                 acis50  =  54.192,
-                 acis90  =  26.975,
-                 c1      = 114.609,
-                 c2      =  11.362,
-                 hrci150 =  32.977,
-                 hrci50  =  38.543,
-                 hrci90  =  28.053,
-                 hrcs150 =  37.265,
-                 hrcs50  =  30.715,
-                 hrcs90  =  30.013,
-                 u01     =   6.036,
+model_par = dict(
+                 acis150 =  28.532,
+                 acis50  =  55.127,
+                 acis90  =  26.996,
+                 c1      = 113.695,
+                 c2      =  12.024,
+                 hrci150 =  33.062,
+                 hrci50  =  42.657,
+                 hrci90  =  30.204,
+                 hrcs150 =  37.863,
+                 hrcs50  =  31.263,
+                 hrcs90  =  30.135,
+                 u01     =   5.942,
                  u01quad =  -0.599,
-                 u12     =   8.451,
-                 )
+                 u12     =   8.502,
+                )
 
 # validation limits
 # 'msid' : (( quantile, absolute max value ))
