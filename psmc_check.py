@@ -39,7 +39,7 @@ if __name__ == '__main__':
 import matplotlib.pyplot as plt
 import Ska.Matplotlib
 
-VERSION = 8
+VERSION = 9
 
 MSID = dict(dea='1PDEAAT', pin='1PIN1AT')
 YELLOW = dict(dea=characteristics.T_dea_yellow, pin=characteristics.T_pin_yellow)
